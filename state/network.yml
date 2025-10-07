@@ -1,0 +1,26 @@
+---
+network:
+  hostname: cooperator
+  ip: 192.168.254.10/24
+  gateway: 192.168.254.1
+
+  external:
+    public_ip: 47.155.237.161
+    ddns: crtrcooperator.duckdns.org
+    forwards: [22/tcp, 80/tcp, 443/tcp]
+
+  cluster:
+    network: 192.168.254.0/24
+    nodes:
+      - cooperator: 192.168.254.10
+      - projector: 192.168.254.20
+      - director: 192.168.254.30
+
+  dns:
+    server: 192.168.254.10
+    upstream: [1.1.1.1, 1.0.0.1]
+
+  nfs:
+    server: 192.168.254.10
+    export: /cluster-nas
+    clients: 192.168.254.0/24

@@ -1,0 +1,50 @@
+---
+domains:
+  gateway: 192.168.254.10
+  external: crtrcooperator.duckdns.org
+
+  routes:
+    # Root
+    - fqdn: ism.la
+      action: redir https://www.ism.la
+    - fqdn: www.ism.la
+      action: respond "Welcome to ism.la"
+
+    # Cooperator services
+    - fqdn: dns.ism.la
+      backend: localhost:8080
+    - fqdn: mng.ism.la
+      backend: https://localhost:9090
+      tls_skip: true
+    - fqdn: smp.ism.la
+      backend: localhost:3000
+    - fqdn: ssh.ism.la
+      backend: localhost:7681
+      type: websocket
+    - fqdn: n8n.ism.la
+      backend: localhost:5678
+      flush: -1
+
+    # Projector services (proxied)
+    - fqdn: acn.ism.la
+      backend: 192.168.254.20:3737
+    - fqdn: api.ism.la
+      backend: 192.168.254.20:3737
+    - fqdn: dtb.ism.la
+      backend: 192.168.254.20:54321
+    - fqdn: mcp.ism.la
+      backend: 192.168.254.20:8051
+    - fqdn: cht.ism.la
+      backend: 192.168.254.20:8080
+
+  local_dns:
+    - dns.ism.la: 192.168.254.10
+    - mng.ism.la: 192.168.254.10
+    - smp.ism.la: 192.168.254.10
+    - ssh.ism.la: 192.168.254.10
+    - n8n.ism.la: 192.168.254.10
+    - acn.ism.la: 192.168.254.10
+    - api.ism.la: 192.168.254.10
+    - dtb.ism.la: 192.168.254.10
+    - mcp.ism.la: 192.168.254.10
+    - cht.ism.la: 192.168.254.10

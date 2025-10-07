@@ -1,0 +1,63 @@
+---
+aspect: user-environment
+domain: User-level configuration, dotfiles, tools, directory structure
+owner: crtr
+
+shell:
+  default: /bin/zsh
+  rc_files:
+    - ~/.zshrc
+    - ~/.bashrc
+  managed_by: chezmoi
+
+directories:
+  ~/.local/bin: User scripts and binaries
+  ~/.local/share: Application data
+  ~/.config: Application configurations
+  ~/Projects: Code repositories
+  ~/workspace: Active work area
+
+dotfiles:
+  source: chezmoi
+  repo: ~/Projects/dotfiles  # or remote
+  files:
+    - .zshrc
+    - .bashrc
+    - .gitconfig
+    - .config/starship.toml
+    - .config/atuin/config.toml
+
+tools:
+  package_manager:
+    - eza
+    - bat
+    - fd-find
+    - ripgrep
+    - zoxide
+
+  standalone:
+    - starship (shell prompt)
+    - atuin (shell history)
+
+environment_variables:
+  PATH: $HOME/.local/bin:$PATH
+  EDITOR: vim
+  VISUAL: vim
+
+completion:
+  shell_configured: true
+  dotfiles_applied: true
+  tools_installed: true
+  directories_exist: true
+
+persistence:
+  method: chezmoi + git
+  dotfiles_versioned: true
+  survives_user_recreation: false  # Needs reapply
+  sync_mechanism: chezmoi apply
+
+growth:
+  add_dotfile: chezmoi add <file>
+  modify_dotfile: Edit source → chezmoi apply
+  add_tool: Install → Add to aspect.yml
+  share_config: Git push dotfiles repo

@@ -1,0 +1,59 @@
+---
+services:
+  caddy:
+    type: systemd
+    binary: /usr/bin/caddy
+    config: /etc/caddy/Caddyfile
+    ports: [80/tcp, 443/tcp]
+    settings:
+      email: admin@ism.la
+
+  pihole:
+    type: systemd
+    service: pihole-FTL
+    config_dir: /etc/pihole
+    local_dns: /etc/dnsmasq.d/02-custom-local-dns.conf
+    ports: [53/udp, 8080/tcp]
+    bind:
+      53: 0.0.0.0
+      8080: 127.0.0.1
+    upstream_dns: [1.1.1.1, 1.0.0.1]
+
+  nfs:
+    type: systemd
+    service: nfs-kernel-server
+    exports: /etc/exports
+
+  docker:
+    type: systemd
+    service: docker
+    compose: plugin
+
+  atuin:
+    type: systemd
+    binary: /usr/local/bin/atuin
+    unit: /etc/systemd/system/atuin-server.service
+    port: 8811
+    data: /home/crtr/.local/share/atuin
+
+  semaphore:
+    type: systemd
+    binary: /usr/local/bin/semaphore
+    unit: /etc/systemd/system/semaphore.service
+    port: 3000
+    bind: 127.0.0.1
+    data: /cluster-nas/services/semaphore
+
+  gotty:
+    type: systemd
+    binary: /usr/local/bin/gotty
+    unit: /etc/systemd/system/gotty.service
+    port: 7681
+    bind: 127.0.0.1
+
+  n8n:
+    type: docker-compose
+    compose: /cluster-nas/services/n8n/docker-compose.yml
+    port: 5678
+    bind: 127.0.0.1
+    data: /cluster-nas/services/n8n/data
