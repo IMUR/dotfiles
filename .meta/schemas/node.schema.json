@@ -1,0 +1,263 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://crtr-config/schemas/node.schema.json",
+  "title": "Node Configuration",
+  "description": "Schema for node identity and system configuration",
+  "type": "object",
+  "properties": {
+    "node": {
+      "type": "object",
+      "required": ["identity", "os", "hardware"],
+      "properties": {
+        "identity": {
+          "type": "object",
+          "required": ["hostname", "short_name", "role"],
+          "properties": {
+            "hostname": {
+              "type": "string",
+              "pattern": "^[a-z0-9-]+$",
+              "description": "Full hostname"
+            },
+            "short_name": {
+              "type": "string",
+              "pattern": "^[a-z]{4}$",
+              "description": "4-letter short name (e.g., crtr, prtr, drtr)"
+            },
+            "role": {
+              "type": "string",
+              "enum": ["gateway", "compute", "ml", "storage", "controller"],
+              "description": "Node role in cluster"
+            },
+            "description": {
+              "type": "string",
+              "description": "Human-readable description of node purpose"
+            }
+          }
+        },
+        "os": {
+          "type": "object",
+          "required": ["distribution", "version"],
+          "properties": {
+            "distribution": {
+              "type": "string",
+              "description": "Linux distribution name"
+            },
+            "version": {
+              "type": "string",
+              "description": "Distribution version (number or codename)"
+            },
+            "codename": {
+              "type": "string",
+              "description": "Release codename (e.g., trixie, bookworm)"
+            },
+            "kernel": {
+              "type": "string",
+              "description": "Kernel version"
+            },
+            "architecture": {
+              "type": "string",
+              "enum": ["x86_64", "aarch64", "arm64", "armv7l"],
+              "description": "System architecture"
+            }
+          }
+        },
+        "hardware": {
+          "type": "object",
+          "required": ["platform", "cpu", "memory"],
+          "properties": {
+            "platform": {
+              "type": "string",
+              "description": "Hardware platform (e.g., Raspberry Pi 5, Generic x86_64)"
+            },
+            "cpu": {
+              "type": "object",
+              "required": ["cores"],
+              "properties": {
+                "model": {
+                  "type": "string",
+                  "description": "CPU model name"
+                },
+                "cores": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "description": "Number of CPU cores"
+                },
+                "threads": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "description": "Number of CPU threads"
+                },
+                "architecture": {
+                  "type": "string",
+                  "enum": ["x86_64", "arm64", "armv7l"],
+                  "description": "CPU architecture"
+                }
+              }
+            },
+            "memory": {
+              "type": "object",
+              "required": ["total"],
+              "properties": {
+                "total": {
+                  "type": "string",
+                  "pattern": "^[0-9]+(GB|MB)$",
+                  "description": "Total RAM (e.g., 16GB, 32GB)"
+                },
+                "total_bytes": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "description": "Total RAM in bytes"
+                }
+              }
+            },
+            "storage": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "required": ["device", "size", "type"],
+                "properties": {
+                  "device": {
+                    "type": "string",
+                    "pattern": "^/dev/[a-z]+[0-9]*$",
+                    "description": "Device path"
+                  },
+                  "size": {
+                    "type": "string",
+                    "pattern": "^[0-9]+(\\.[0-9]+)?(GB|TB|MB)$",
+                    "description": "Storage size"
+                  },
+                  "type": {
+                    "type": "string",
+                    "enum": ["usb", "nvme", "ssd", "hdd", "sd", "emmc"],
+                    "description": "Storage type"
+                  },
+                  "interface": {
+                    "type": "string",
+                    "enum": ["usb3.0", "usb3.1", "nvme", "sata", "emmc"],
+                    "description": "Storage interface"
+                  },
+                  "mount": {
+                    "type": "string",
+                    "description": "Mount point"
+                  }
+                }
+              },
+              "description": "Storage devices"
+            },
+            "gpu": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "required": ["model"],
+                "properties": {
+                  "model": {
+                    "type": "string",
+                    "description": "GPU model"
+                  },
+                  "vendor": {
+                    "type": "string",
+                    "enum": ["nvidia", "amd", "intel", "other"],
+                    "description": "GPU vendor"
+                  },
+                  "memory": {
+                    "type": "string",
+                    "pattern": "^[0-9]+(GB|MB)$",
+                    "description": "GPU memory"
+                  },
+                  "pci_id": {
+                    "type": "string",
+                    "description": "PCI device ID"
+                  }
+                }
+              },
+              "description": "GPU devices (if any)"
+            }
+          }
+        },
+        "location": {
+          "type": "object",
+          "properties": {
+            "timezone": {
+              "type": "string",
+              "default": "UTC",
+              "description": "System timezone"
+            },
+            "locale": {
+              "type": "string",
+              "default": "en_US.UTF-8",
+              "description": "System locale"
+            }
+          }
+        },
+        "network": {
+          "type": "object",
+          "description": "Network identity (references network.yml)",
+          "properties": {
+            "internal_ip": {
+              "type": "string",
+              "pattern": "^([0-9]{1,3}\\.){3}[0-9]{1,3}$",
+              "description": "Internal cluster IP"
+            },
+            "external_ip": {
+              "type": "string",
+              "pattern": "^([0-9]{1,3}\\.){3}[0-9]{1,3}$",
+              "description": "External/public IP (if applicable)"
+            },
+            "mac_address": {
+              "type": "string",
+              "pattern": "^([0-9A-F]{2}:){5}[0-9A-F]{2}$",
+              "description": "Primary network interface MAC"
+            }
+          }
+        },
+        "services": {
+          "type": "object",
+          "description": "High-level service capabilities",
+          "properties": {
+            "gateway": {
+              "type": "boolean",
+              "description": "Provides gateway/reverse proxy"
+            },
+            "dns": {
+              "type": "boolean",
+              "description": "Provides DNS services"
+            },
+            "nfs": {
+              "type": "boolean",
+              "description": "Provides NFS storage"
+            },
+            "compute": {
+              "type": "boolean",
+              "description": "Provides compute services"
+            },
+            "ml": {
+              "type": "boolean",
+              "description": "Provides ML/AI workloads"
+            }
+          }
+        },
+        "metadata": {
+          "type": "object",
+          "properties": {
+            "created": {
+              "type": "string",
+              "format": "date-time",
+              "description": "When this node config was created"
+            },
+            "last_updated": {
+              "type": "string",
+              "format": "date-time",
+              "description": "When this config was last updated"
+            },
+            "source_of_truth": {
+              "type": "boolean",
+              "default": true,
+              "description": "Whether this is the authoritative node definition"
+            }
+          }
+        }
+      }
+    }
+  },
+  "required": ["node"]
+}

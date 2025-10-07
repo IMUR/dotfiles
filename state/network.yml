@@ -1,26 +1,88 @@
 ---
+# Network configuration for cooperator
+# Schema: .meta/schemas/network.schema.json
+# Source: COOPERATOR-ASPECTS.md
+
 network:
-  hostname: cooperator
-  ip: 192.168.254.10/24
-  gateway: 192.168.254.1
+  interface:
+    name: eth0
+    ip: 192.168.254.10/24
+    gateway: 192.168.254.1
+    mac: 88:A2:9E:07:04:22
+
+  dns:
+    client:
+      nameserver: 127.0.0.1
+      config_file: /etc/resolv.conf
+    server:
+      type: pihole
+      bind: 0.0.0.0
+      port: 53
+      upstream:
+        - 1.1.1.1
+        - 1.0.0.1
+      local_overrides:
+        - domain: dns.ism.la
+          ip: 192.168.254.10
+        - domain: mng.ism.la
+          ip: 192.168.254.10
+        - domain: smp.ism.la
+          ip: 192.168.254.10
+        - domain: ssh.ism.la
+          ip: 192.168.254.10
+        - domain: n8n.ism.la
+          ip: 192.168.254.10
+        - domain: acn.ism.la
+          ip: 192.168.254.10
+        - domain: api.ism.la
+          ip: 192.168.254.10
+        - domain: dtb.ism.la
+          ip: 192.168.254.10
+        - domain: mcp.ism.la
+          ip: 192.168.254.10
+        - domain: cht.ism.la
+          ip: 192.168.254.10
+      config_dir: /etc/pihole/
+
+  ddns:
+    provider: duckdns
+    domain: crtrcooperator.duckdns.org
+    token: dd3810d4-6ea3-497b-832f-ec0beaf679b3
+    update_script: ~/duckdns/duck.sh
+    cron_schedule: "*/5 * * * *"
+    log_file: ~/duckdns/duck.log
 
   external:
     public_ip: 47.155.237.161
-    ddns: crtrcooperator.duckdns.org
-    forwards: [22/tcp, 80/tcp, 443/tcp]
+    ddns_hostname: crtrcooperator.duckdns.org
+    port_forwards:
+      - port: 22
+        protocol: tcp
+        destination: 192.168.254.10:22
+        description: SSH
+      - port: 80
+        protocol: tcp
+        destination: 192.168.254.10:80
+        description: HTTP
+      - port: 443
+        protocol: tcp
+        destination: 192.168.254.10:443
+        description: HTTPS
 
   cluster:
-    network: 192.168.254.0/24
+    subnet: 192.168.254.0/24
     nodes:
-      - cooperator: 192.168.254.10
-      - projector: 192.168.254.20
-      - director: 192.168.254.30
-
-  dns:
-    server: 192.168.254.10
-    upstream: [1.1.1.1, 1.0.0.1]
+      cooperator: 192.168.254.10
+      projector: 192.168.254.20
+      director: 192.168.254.30
 
   nfs:
-    server: 192.168.254.10
-    export: /cluster-nas
-    clients: 192.168.254.0/24
+    exports:
+      - path: /cluster-nas
+        clients: 192.168.254.0/24
+        options:
+          - rw
+          - sync
+          - no_subtree_check
+          - no_root_squash
+    config_file: /etc/exports

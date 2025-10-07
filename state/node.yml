@@ -1,0 +1,59 @@
+---
+# Node identity and configuration for cooperator
+# Schema: .meta/schemas/node.schema.json
+# Source: COOPERATOR-ASPECTS.md
+
+node:
+  identity:
+    hostname: cooperator
+    short_name: crtr
+    role: gateway
+    description: Gateway node - reverse proxy, DNS, NFS server
+
+  os:
+    distribution: Debian GNU/Linux
+    version: "13"
+    codename: trixie
+    architecture: aarch64
+
+  hardware:
+    platform: Raspberry Pi 5
+    cpu:
+      model: ARM Cortex-A76
+      cores: 4
+      architecture: arm64
+    memory:
+      total: 16GB
+      total_bytes: 17179869184
+    storage:
+      - device: /dev/sdb
+        size: 931GB
+        type: usb
+        interface: usb3.0
+        mount: /
+      - device: /dev/sda
+        size: 1.8TB
+        type: nvme
+        interface: nvme
+        mount: /cluster-nas
+
+  location:
+    timezone: UTC
+    locale: en_US.UTF-8
+
+  network:
+    internal_ip: 192.168.254.10
+    external_ip: 47.155.237.161
+    mac_address: 88:A2:9E:07:04:22
+
+  services:
+    gateway: true
+    dns: true
+    nfs: true
+    compute: false
+    ml: false
+
+  metadata:
+    created: "2025-10-07T00:00:00Z"
+    last_updated: "2025-10-07T00:00:00Z"
+    source_of_truth: true

@@ -1,50 +1,81 @@
 ---
+# Domain routing configuration for cooperator
+# Schema: .meta/schemas/domain.schema.json
+# Source: COOPERATOR-ASPECTS.md
+
+gateway_ip: 192.168.254.10
+external_target: crtrcooperator.duckdns.org
+
 domains:
-  gateway: 192.168.254.10
-  external: crtrcooperator.duckdns.org
+  # Cooperator Services
+  - fqdn: dns.ism.la
+    service: pihole
+    backend: localhost:8080
+    type: standard
+    local_ip: 192.168.254.10
+    external_dns: true
 
-  routes:
-    # Root
-    - fqdn: ism.la
-      action: redir https://www.ism.la
-    - fqdn: www.ism.la
-      action: respond "Welcome to ism.la"
+  - fqdn: mng.ism.la
+    service: cockpit
+    backend: https://localhost:9090
+    type: https_backend
+    tls_skip_verify: true
+    local_ip: 192.168.254.10
+    external_dns: true
 
-    # Cooperator services
-    - fqdn: dns.ism.la
-      backend: localhost:8080
-    - fqdn: mng.ism.la
-      backend: https://localhost:9090
-      tls_skip: true
-    - fqdn: smp.ism.la
-      backend: localhost:3000
-    - fqdn: ssh.ism.la
-      backend: localhost:7681
-      type: websocket
-    - fqdn: n8n.ism.la
-      backend: localhost:5678
-      flush: -1
+  - fqdn: smp.ism.la
+    service: semaphore
+    backend: localhost:3000
+    type: standard
+    local_ip: 192.168.254.10
+    external_dns: true
 
-    # Projector services (proxied)
-    - fqdn: acn.ism.la
-      backend: 192.168.254.20:3737
-    - fqdn: api.ism.la
-      backend: 192.168.254.20:3737
-    - fqdn: dtb.ism.la
-      backend: 192.168.254.20:54321
-    - fqdn: mcp.ism.la
-      backend: 192.168.254.20:8051
-    - fqdn: cht.ism.la
-      backend: 192.168.254.20:8080
+  - fqdn: ssh.ism.la
+    service: gotty
+    backend: localhost:7681
+    type: websocket
+    local_ip: 192.168.254.10
+    external_dns: true
 
-  local_dns:
-    - dns.ism.la: 192.168.254.10
-    - mng.ism.la: 192.168.254.10
-    - smp.ism.la: 192.168.254.10
-    - ssh.ism.la: 192.168.254.10
-    - n8n.ism.la: 192.168.254.10
-    - acn.ism.la: 192.168.254.10
-    - api.ism.la: 192.168.254.10
-    - dtb.ism.la: 192.168.254.10
-    - mcp.ism.la: 192.168.254.10
-    - cht.ism.la: 192.168.254.10
+  - fqdn: n8n.ism.la
+    service: n8n
+    backend: localhost:5678
+    type: sse
+    local_ip: 192.168.254.10
+    external_dns: true
+
+  # Projector Services (Proxied)
+  - fqdn: acn.ism.la
+    service: archon
+    backend: 192.168.254.20:3737
+    type: standard
+    local_ip: 192.168.254.10
+    external_dns: true
+
+  - fqdn: api.ism.la
+    service: archon
+    backend: 192.168.254.20:3737
+    type: standard
+    local_ip: 192.168.254.10
+    external_dns: true
+
+  - fqdn: dtb.ism.la
+    service: database
+    backend: 192.168.254.20:54321
+    type: standard
+    local_ip: 192.168.254.10
+    external_dns: true
+
+  - fqdn: mcp.ism.la
+    service: mcp
+    backend: 192.168.254.20:8051
+    type: standard
+    local_ip: 192.168.254.10
+    external_dns: true
+
+  - fqdn: cht.ism.la
+    service: openwebui
+    backend: 192.168.254.20:8080
+    type: standard
+    local_ip: 192.168.254.10
+    external_dns: true

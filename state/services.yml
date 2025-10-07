@@ -1,59 +1,96 @@
 ---
+# Service definitions for cooperator
+# Schema: .meta/schemas/service.schema.json
+# Source: COOPERATOR-ASPECTS.md
+
 services:
+  # Gateway Infrastructure
   caddy:
     type: systemd
+    enabled: true
     binary: /usr/bin/caddy
+    unit_file: package
     config: /etc/caddy/Caddyfile
-    ports: [80/tcp, 443/tcp]
-    settings:
-      email: admin@ism.la
+    port: 80
+    bind: 0.0.0.0
+    restart: on-failure
 
   pihole:
     type: systemd
-    service: pihole-FTL
-    config_dir: /etc/pihole
-    local_dns: /etc/dnsmasq.d/02-custom-local-dns.conf
-    ports: [53/udp, 8080/tcp]
-    bind:
-      53: 0.0.0.0
-      8080: 127.0.0.1
-    upstream_dns: [1.1.1.1, 1.0.0.1]
+    enabled: true
+    binary: /usr/bin/pihole-FTL
+    unit_file: package
+    config: /etc/pihole/
+    port: 53
+    bind: 0.0.0.0
+    restart: on-failure
 
-  nfs:
+  # Storage
+  nfs-kernel-server:
     type: systemd
-    service: nfs-kernel-server
-    exports: /etc/exports
+    enabled: true
+    binary: /usr/sbin/nfs-server
+    unit_file: package
+    config: /etc/exports
+    port: 2049
+    restart: on-failure
 
+  # Container Runtime
   docker:
     type: systemd
-    service: docker
-    compose: plugin
+    enabled: true
+    binary: /usr/bin/dockerd
+    unit_file: package
+    restart: on-failure
 
-  atuin:
+  # Custom Systemd Services
+  atuin-server:
     type: systemd
+    enabled: true
     binary: /usr/local/bin/atuin
-    unit: /etc/systemd/system/atuin-server.service
+    unit_file: /etc/systemd/system/atuin-server.service
     port: 8811
+    bind: 0.0.0.0
     data: /home/crtr/.local/share/atuin
+    user: crtr
+    restart: on-failure
+    dependencies:
+      - docker
 
   semaphore:
     type: systemd
+    enabled: true
     binary: /usr/local/bin/semaphore
-    unit: /etc/systemd/system/semaphore.service
+    unit_file: /etc/systemd/system/semaphore.service
     port: 3000
     bind: 127.0.0.1
     data: /cluster-nas/services/semaphore
+    user: crtr
+    restart: on-failure
+    dependencies:
+      - nfs-kernel-server
 
   gotty:
     type: systemd
+    enabled: true
     binary: /usr/local/bin/gotty
-    unit: /etc/systemd/system/gotty.service
+    unit_file: /etc/systemd/system/gotty.service
     port: 7681
     bind: 127.0.0.1
+    user: crtr
+    restart: on-failure
 
+  # Docker Compose Services
   n8n:
     type: docker-compose
-    compose: /cluster-nas/services/n8n/docker-compose.yml
+    enabled: true
+    compose_file: /cluster-nas/services/n8n/docker-compose.yml
+    image: n8nio/n8n:latest
     port: 5678
     bind: 127.0.0.1
     data: /cluster-nas/services/n8n/data
+    env_file: /cluster-nas/services/n8n/.env
+    restart: unless-stopped
+    dependencies:
+      - docker
+      - nfs-kernel-server

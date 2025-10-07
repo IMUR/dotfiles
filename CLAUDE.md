@@ -2,352 +2,551 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## 🚀 Quick Start
+
+**New to this repository?** Read [`START-HERE.md`](START-HERE.md) first.
+
+**For AI context**, read:
+
+1. `.meta/ai/context.json` - Complete operational context
+2. `.meta/ai/knowledge.yml` - Troubleshooting knowledge base
+
 ## Repository Overview
 
-**crtr-config** is a declarative Infrastructure-as-Code repository for the cooperator node (192.168.254.10), the gateway of a 3-node Co-lab cluster. This repository uses an **aspect-based architecture** to define system state declaratively and provide reproducible deployment.
+**crtr-config** is a **schema-first, state-driven** Infrastructure-as-Code repository for the cooperator node (192.168.254.10), the gateway of a 3-node Co-lab cluster.
+
+### What Makes This Special
+
+**State → Validation → Generation → Deployment**
+
+```
+state/*.yml (edit)
+  ↓ validate
+.meta/schemas/*.json (enforce structure)
+  ↓ generate
+config/* (auto-generated)
+  ↓ deploy
+Live system (cooperator)
+```
+
+**Never edit generated configs directly.** Always edit state files.
 
 ### Node Profile: Cooperator (crtr)
 
-- **IP**: 192.168.254.10 (internal), 47.155.237.161 (external via crtrcooperator.duckdns.org)
+- **IP**: 192.168.254.10 (internal), 47.155.237.161 (external)
 - **Hardware**: Raspberry Pi 5 (ARM64, 4-core, 16GB RAM)
 - **OS**: Debian 13 (Trixie)
-- **Role**: Cluster gateway - reverse proxy (Caddy), DNS (Pi-hole), NFS server
+- **Role**: Gateway - reverse proxy (Caddy), DNS (Pi-hole), NFS server
 - **Storage**: 931GB USB (OS) + 1.8TB NVMe (/cluster-nas)
 
-## Architecture: Aspect-Based Configuration
+## Architecture: Schema-First State Management
 
-This repository organizes configuration by **technical aspects** (domains of system functionality) rather than by service or application. Each aspect defines desired state, deployment procedure, and verification.
+### Core Principle
 
-### Aspect Structure
+**Single Source of Truth**: All system configuration lives in validated YAML state files.
 
-```
-aspects/
-├── systemd/                    # All systemd services
-│   ├── aspect.yml             # Service definitions and state
-│   ├── deploy.md              # How to achieve this state
-│   └── verify.sh              # Test that state is achieved
-└── user-environment/          # User-level configuration
-    ├── aspect.yml
-    ├── deploy.md
-    └── verify.sh
-```
-
-**Aspect Pattern**:
-- `aspect.yml` - Declarative state definition (what should exist)
-- `deploy.md` - Imperative deployment steps (how to achieve state)
-- `verify.sh` - Validation script (how to test state is correct)
-
-### The Seven Aspects
-
-See `ASPECTS.md` and `COOPERATOR-ASPECTS.md` for complete breakdown:
-
-1. **BASE SYSTEM** - OS, packages, system configuration
-2. **STORAGE** - Disks, filesystems, mounts, NFS exports
-3. **NETWORK** - Interfaces, IPs, DNS client/server
-4. **SERVICES** - Systemd units and Docker containers
-5. **GATEWAY** - Caddy reverse proxy, domain routing
-6. **USER ENVIRONMENT** - Shell, dotfiles, user tools
-7. **SECURITY** - SSH, permissions, secrets, firewall
-
-### State Declaration Files
+### Repository Structure
 
 ```
-state/
-├── system.yml        # Identity, network, storage, users
-├── services.yml      # All running services
-├── domains.yml       # Domain → service mappings
-└── network.yml       # DNS overrides, cluster connectivity
+├── START-HERE.md              # 👈 Read this first
+├── CLAUDE.md                  # This file
+├── .meta/                     # Architecture & AI layer
+│   ├── ARCHITECTURE.md        # Complete technical design
+│   ├── VISION.md              # Why schema-first
+│   ├── EXAMPLE-FLOW.md        # Workflow examples
+│   ├── IMPLEMENTATION-ROADMAP.md  # Build plan
+│   ├── schemas/               # JSON schemas for validation
+│   │   ├── service.schema.json
+│   │   ├── domain.schema.json
+│   │   ├── network.schema.json
+│   │   └── node.schema.json
+│   ├── ai/                    # AI operational context
+│   │   ├── context.json       # File locations, patterns
+│   │   ├── knowledge.yml      # Troubleshooting KB
+│   │   └── workflows.yml      # Common procedures
+│   ├── generation/            # Jinja2 templates
+│   │   ├── caddyfile.j2
+│   │   ├── dns-overrides.j2
+│   │   └── systemd-unit.j2
+│   └── validation/            # Validation tools
+│       └── validate.sh
+├── state/                     # 👈 EDIT THESE (source of truth)
+│   ├── services.yml           # All services
+│   ├── domains.yml            # Domain routing
+│   ├── network.yml            # Network config
+│   └── node.yml               # Node identity
+├── config/                    # Generated configs (DO NOT EDIT)
+│   ├── caddy/
+│   ├── pihole/
+│   ├── systemd/
+│   └── docker/
+├── scripts/                   # Operational scripts
+│   ├── generate/              # Config generators
+│   │   └── regenerate-all.sh
+│   ├── sync/                  # State sync tools
+│   ├── ssot/                  # Infrastructure truth
+│   └── dns/                   # DNS management
+├── deploy/                    # Deployment automation
+│   ├── deploy                 # Main CLI
+│   ├── phases/                # Deploy stages
+│   └── verify/                # Verification
+├── docs/                      # Documentation
+└── tests/                     # Test scripts
 ```
 
-These files declare the **desired state** of the system. They are the source of truth.
+### State Files (Source of Truth)
 
-## Key Commands
+| File | Purpose | Schema |
+|------|---------|--------|
+| `state/services.yml` | All systemd/docker services | `.meta/schemas/service.schema.json` |
+| `state/domains.yml` | Domain → service routing | `.meta/schemas/domain.schema.json` |
+| `state/network.yml` | Network configuration | `.meta/schemas/network.schema.json` |
+| `state/node.yml` | Node identity & hardware | `.meta/schemas/node.schema.json` |
 
-### Service Management
+### Generated Configs (DO NOT EDIT)
+
+These are auto-generated from state files:
+
+| Config | Generated From | Template |
+|--------|---------------|----------|
+| `config/caddy/Caddyfile` | `state/domains.yml` | `.meta/generation/caddyfile.j2` |
+| `config/pihole/local-dns.conf` | `state/domains.yml` | `.meta/generation/dns-overrides.j2` |
+| `config/systemd/*.service` | `state/services.yml` | `.meta/generation/systemd-unit.j2` |
+| `config/docker/*/docker-compose.yml` | `state/services.yml` | `.meta/generation/docker-compose.j2` |
+
+## Essential Commands
+
+### State Management Workflow
 
 ```bash
-# Gateway services (systemd)
-sudo systemctl status caddy pihole-FTL nfs-kernel-server
-sudo systemctl reload caddy              # Preferred for config changes
-sudo caddy validate --config /etc/caddy/Caddyfile
+# 1. Edit state
+vim state/services.yml
 
-# Custom services (systemd)
-systemctl status atuin-server semaphore gotty
+# 2. Validate
+./tests/test-state.sh
+# or
+.meta/validation/validate.sh state/services.yml
 
-# Docker services
-docker ps
-docker compose -f /cluster-nas/services/n8n/docker-compose.yml logs -f
-docker compose -f /cluster-nas/services/n8n/docker-compose.yml up -d
+# 3. Generate configs
+./scripts/generate/regenerate-all.sh
+
+# 4. Review generated configs
+git diff config/
+
+# 5. Deploy
+./deploy/deploy service myservice
+# or
+./deploy/deploy all
 ```
 
-### Configuration Testing
+### Validation
 
 ```bash
-# Validate Caddy configuration before applying
-sudo caddy validate --config /etc/caddy/Caddyfile
+# Validate all state files
+./tests/test-state.sh
 
-# Test DNS resolution
-dig @localhost n8n.ism.la +short          # Should return 192.168.254.10
-dig @8.8.8.8 n8n.ism.la +short            # Should return external IP
+# Validate specific file
+.meta/validation/validate.sh state/services.yml
 
-# Reload DNS after changes
-sudo systemctl restart pihole-FTL
-
-# Check NFS exports
-showmount -e localhost
+# Check schema compliance
+jsonschema -i state/services.yml .meta/schemas/service.schema.json
 ```
 
-### Aspect Verification
+### Config Generation
 
 ```bash
-# Run aspect verification scripts
-./aspects/systemd/verify.sh
-./aspects/user-environment/verify.sh
+# Regenerate all configs
+./scripts/generate/regenerate-all.sh
 
-# Check overall health
-systemctl --failed                        # Should show no failed units
-docker ps --filter "status=exited"       # Should be empty
-df -h /cluster-nas                       # Check storage
+# Generate specific config type
+./scripts/generate/caddy.sh        # Caddyfile
+./scripts/generate/dns.sh          # DNS overrides
+./scripts/generate/systemd.sh      # systemd units
 ```
 
-## Configuration Locations
-
-| Component | Live Location | Repo Reference | Backup |
-|-----------|---------------|----------------|--------|
-| Caddy config | `/etc/caddy/Caddyfile` | `services/caddy/` | `/etc/caddy/Caddyfile.backup.*` |
-| Pi-hole config | `/etc/pihole/` | `services/pihole/` | `/etc/pihole/config_backups/` |
-| DNS overrides | `/etc/dnsmasq.d/02-custom-local-dns.conf` | `network/dns/` | - |
-| NFS exports | `/etc/exports` | `state/system.yml` | - |
-| Systemd units | `/etc/systemd/system/*.service` | `aspects/systemd/` | - |
-| Docker services | `/cluster-nas/services/*/` | `services/*/` | Version controlled |
-
-**Important**: Live configs on the system are the source of truth. This repo provides templates and reference configurations.
-
-## Adding a New Service
-
-This is a multi-aspect operation:
-
-### 1. SERVICES Aspect - Deploy the service
+### Deployment
 
 ```bash
-# For Docker service
-mkdir -p /cluster-nas/services/myservice
-cd /cluster-nas/services/myservice
-# Create docker-compose.yml with service bound to 127.0.0.1:PORT
-docker compose up -d
+# Deploy everything
+./deploy/deploy all
+
+# Deploy specific service
+./deploy/deploy service n8n
+
+# Deploy specific component
+./deploy/deploy gateway            # Caddy + DNS
+./deploy/deploy storage            # NFS + mounts
+
+# Verify deployment
+./deploy/verify/verify-all.sh
+./deploy/verify/verify-service.sh n8n
 ```
 
-### 2. GATEWAY Aspect - Add reverse proxy
+### Troubleshooting
 
 ```bash
-# Edit /etc/caddy/Caddyfile
-sudo vim /etc/caddy/Caddyfile
+# Query AI knowledge base
+grep -A 20 "symptom: service won't start" .meta/ai/knowledge.yml
 
-# Add block (choose appropriate pattern):
-myservice.ism.la {
-    reverse_proxy localhost:PORT
-}
-
-# For WebSocket support:
-myservice.ism.la {
-    reverse_proxy localhost:PORT {
-        header_up Upgrade {>Upgrade}
-        header_up Connection {>Connection}
-    }
-}
-
-# For Server-Sent Events (SSE):
-myservice.ism.la {
-    reverse_proxy localhost:PORT {
-        flush_interval -1
-    }
-}
-
-# Validate and reload
-sudo caddy validate --config /etc/caddy/Caddyfile
-sudo systemctl reload caddy
-```
-
-### 3. NETWORK Aspect - Add DNS override
-
-```bash
-# Add local DNS override
-echo "address=/myservice.ism.la/192.168.254.10" | \
-  sudo tee -a /etc/dnsmasq.d/02-custom-local-dns.conf
-
-sudo systemctl restart pihole-FTL
-
-# Test resolution
-dig @localhost myservice.ism.la +short
-```
-
-### 4. Update Repository State
-
-```bash
-# Update state/services.yml
-# Update state/domains.yml
-# Update aspects/systemd/aspect.yml (if systemd service)
-# Commit changes
-```
-
-## Reverse Proxy Patterns
-
-### Standard HTTP Service
-```caddy
-service.ism.la {
-    reverse_proxy localhost:PORT
-}
-```
-
-### WebSocket Support
-```caddy
-service.ism.la {
-    reverse_proxy localhost:PORT {
-        header_up Upgrade {>Upgrade}
-        header_up Connection {>Connection}
-    }
-}
-```
-
-### Server-Sent Events (SSE)
-```caddy
-service.ism.la {
-    reverse_proxy localhost:PORT {
-        flush_interval -1
-    }
-}
-```
-
-### HTTPS Backend
-```caddy
-service.ism.la {
-    reverse_proxy https://localhost:PORT {
-        transport http {
-            tls_insecure_skip_verify
-        }
-    }
-}
-```
-
-### Cross-Node Proxy (to projector/director)
-```caddy
-service.ism.la {
-    reverse_proxy 192.168.254.XX:PORT
-}
-```
-
-## Security Principles
-
-### Port Binding Strategy
-- **Localhost only** (`127.0.0.1:PORT`): Services accessed via Caddy reverse proxy
-- **Cluster-wide** (`0.0.0.0:PORT`): DNS (53), Atuin (8811), NFS (2049)
-- **Public** (`0.0.0.0:PORT`): Only SSH (22), HTTP (80), HTTPS (443)
-
-### Secrets Management
-- Never commit `.env` files with secrets
-- Store secrets in `/cluster-nas/services/<service>/.env` (not in git)
-- Use `.env.template` files in repo as examples
-- DuckDNS token in `~/duckdns/duck.sh` (needs improvement)
-
-## Development Workflow
-
-### Making Configuration Changes
-
-1. **Test on microSD clone first** (if available)
-2. **Backup configs** before editing
-3. **Validate** before applying (Caddy, systemd units)
-4. **Reload** rather than restart when possible
-5. **Update repo** to match live configs
-6. **Commit** with descriptive message
-
-### Testing Changes
-
-```bash
 # Check service status
-systemctl status <service>
 journalctl -u <service> -n 50
 
-# Check network access
-curl -I https://service.ism.la
-curl http://localhost:PORT        # Direct access test
-
-# Check DNS
+# Verify network
 dig @localhost service.ism.la +short
-
-# Check logs
-journalctl -u caddy -f
-docker compose logs -f <service>
+curl -I https://service.ism.la
 ```
 
-## Troubleshooting
+## Workflow Patterns
 
-### Service Won't Start
-```bash
-journalctl -u <service> -n 50     # Check logs
-sudo ss -tlnp | grep PORT         # Check port conflicts
-systemctl list-dependencies <service>  # Check dependencies
-```
+### Adding a New Service
 
-### DNS Issues
-```bash
-pihole status                     # Check Pi-hole status
-cat /etc/dnsmasq.d/02-custom-local-dns.conf | grep service
-dig @localhost service.ism.la
-sudo systemctl restart pihole-FTL
-```
+**❌ Wrong (old way)**:
 
-### HTTPS Certificate Issues
 ```bash
-journalctl -u caddy -n 50         # Check Caddy logs
-dig service.ism.la @8.8.8.8       # Verify external DNS
+# Manual editing - DON'T DO THIS
+sudo vim /etc/caddy/Caddyfile
+sudo vim /etc/dnsmasq.d/02-custom-local-dns.conf
 sudo systemctl reload caddy
 ```
 
-### WebSocket/SSE Connection Drops
-- Verify Caddy config has appropriate headers/flush_interval
-- Check browser console for connection errors
-- Test direct access: `curl -I http://localhost:PORT`
+**✅ Right (schema-first way)**:
 
-## Cluster Context
+1. **Edit state** (`state/services.yml`):
 
-### Network Topology
+```yaml
+services:
+  myservice:
+    type: docker
+    image: myapp:latest
+    port: 8080
+    bind: 127.0.0.1
+    volumes:
+      - /cluster-nas/services/myservice/data:/data
 ```
-192.168.254.0/24 (cluster network)
-├── 192.168.254.10 - cooperator (gateway)
-├── 192.168.254.20 - projector  (services)
-└── 192.168.254.30 - director   (workloads)
+
+2. **Add domain** (`state/domains.yml`):
+
+```yaml
+domains:
+  myservice.ism.la:
+    backend: localhost:8080
+    type: standard
 ```
 
-### Cooperator's Role
-- **Gateway**: All *.ism.la domains route through cooperator
-- **DNS**: Pi-hole serves DNS for entire cluster
-- **NFS**: Exports /cluster-nas to other nodes
-- **Reverse Proxy**: Caddy proxies to local and remote services
+3. **Validate, generate, deploy**:
 
-### Cross-Node Services
-Cooperator proxies several services running on projector:
-- `acn.ism.la` → `192.168.254.20:3737` (Archon)
-- `dtb.ism.la` → `192.168.254.20:54321` (Database)
-- `mcp.ism.la` → `192.168.254.20:8051` (MCP)
-- `cht.ism.la` → `192.168.254.20:8080` (OpenWebUI)
+```bash
+./tests/test-state.sh                    # Validate
+./scripts/generate/regenerate-all.sh     # Generate
+./deploy/deploy service myservice        # Deploy
+```
 
-## Related Documentation
+### Modifying Service Configuration
 
-- `BUILD-PLAN.md` - Comprehensive rebuild architecture (in progress)
-- `ASPECTS.md` - Overview of the 7 technical aspects
-- `COOPERATOR-ASPECTS.md` - Complete aspect breakdown with all configs
-- `docs/network-spec.md` - Network specifications
-- `docs/n8n-deployment-plan.md` - n8n deployment reference
+**❌ Wrong**:
 
-## Related Repositories
+```bash
+sudo vim /etc/caddy/Caddyfile  # Direct edit
+```
 
-- **colab-config** (`~/Projects/colab-config/`) - Cluster-wide configurations
-- This repository is cooperator-specific; changes here should not break other nodes
+**✅ Right**:
 
-## Notes for AI Assistants
+```bash
+vim state/domains.yml                    # Edit state
+./tests/test-state.sh                    # Validate
+./scripts/generate/regenerate-all.sh     # Regenerate
+./deploy/deploy gateway                  # Deploy
+```
 
-- **Backup before changes**: Always create `.backup` files for critical configs
-- **Validate before applying**: Use validation commands (caddy validate, etc.)
-- **Update repo after changes**: Keep this repo in sync with live configs
-- **Aspect interactions**: Consider multi-aspect impact when making changes
-- **Test thoroughly**: Check logs, status, and actual connectivity after changes
+### Troubleshooting Issues
+
+**Process**:
+
+1. Check `.meta/ai/knowledge.yml` for symptom
+2. Follow diagnostic steps
+3. If fix needed, edit state files
+4. Regenerate and redeploy
+
+**Example**:
+
+```bash
+# Service won't start
+journalctl -u myservice -n 50           # Check logs
+
+# Find issue in knowledge base
+grep -A 30 "service_start_failure" .meta/ai/knowledge.yml
+
+# Fix in state (never direct config edit)
+vim state/services.yml                   # Fix root cause
+./scripts/generate/regenerate-all.sh     # Regenerate
+./deploy/deploy service myservice        # Redeploy
+```
+
+## AI Assistant Guidelines
+
+### When Loading This Repository
+
+**Required reading order**:
+
+1. `START-HERE.md` - Overview and current status
+2. `.meta/ai/context.json` - File locations, patterns, system state
+3. `.meta/ai/knowledge.yml` - Troubleshooting knowledge base
+4. `.meta/ARCHITECTURE.md` - Technical design (if needed)
+
+### When Troubleshooting
+
+**Process**:
+
+1. Query `.meta/ai/knowledge.yml` for symptom
+2. Follow diagnostic procedure
+3. Identify root cause
+4. Suggest **state change** (never direct config edit)
+5. Include verification steps
+
+**Example**:
+
+```yaml
+# From .meta/ai/knowledge.yml
+- symptom: "Caddy reverse proxy 502 Bad Gateway"
+  root_cause: "Backend service not running"
+  state_fix:
+    file: state/services.yml
+    change: "Ensure service.enabled: true"
+  verify:
+    - "systemctl status <service>"
+    - "curl -I http://localhost:<port>"
+```
+
+### When Suggesting Changes
+
+**Always**:
+
+- Edit `state/*.yml` files
+- Run validation: `./tests/test-state.sh`
+- Regenerate configs: `./scripts/generate/regenerate-all.sh`
+- Deploy properly: `./deploy/deploy <target>`
+- Verify: `./deploy/verify/verify-<target>.sh`
+
+**Never**:
+
+- Edit generated configs directly
+- Skip validation
+- Guess at file locations (check `.meta/ai/context.json`)
+- Make changes without verifying
+
+### Context Lookup
+
+**For file locations**:
+
+```bash
+jq '.file_locations' .meta/ai/context.json
+```
+
+**For troubleshooting patterns**:
+
+```bash
+yq '.troubleshooting[] | select(.symptom | contains("search-term"))' .meta/ai/knowledge.yml
+```
+
+## Key Configuration Patterns
+
+### Service Definitions (state/services.yml)
+
+**Systemd service**:
+
+```yaml
+services:
+  caddy:
+    type: systemd
+    binary: /usr/bin/caddy
+    config: /etc/caddy/Caddyfile
+    enabled: true
+    unit_file: package  # or path to custom unit
+```
+
+**Docker service**:
+
+```yaml
+services:
+  n8n:
+    type: docker
+    image: n8nio/n8n:latest
+    port: 5678
+    bind: 127.0.0.1
+    volumes:
+      - /cluster-nas/services/n8n/data:/home/node/.n8n
+    environment:
+      WEBHOOK_URL: https://n8n.ism.la
+```
+
+### Domain Routing (state/domains.yml)
+
+**Standard HTTP**:
+
+```yaml
+domains:
+  service.ism.la:
+    backend: localhost:8080
+    type: standard
+```
+
+**WebSocket**:
+
+```yaml
+domains:
+  ws.ism.la:
+    backend: localhost:9000
+    type: websocket
+```
+
+**Server-Sent Events (SSE)**:
+
+```yaml
+domains:
+  sse.ism.la:
+    backend: localhost:5678
+    type: sse
+```
+
+**Cross-node proxy**:
+
+```yaml
+domains:
+  remote.ism.la:
+    backend: 192.168.254.20:3737
+    type: cross_node
+```
+
+## Security & Safety
+
+### State File Security
+
+- State files may contain **references** to secrets
+- Actual secrets stored in `.env` files (not committed)
+- Use environment variables for sensitive data
+
+### Deployment Safety
+
+- Always validate before generating
+- Always review generated configs before deploying
+- Test on microSD clone when possible
+- Backup before major changes
+
+### Port Binding Strategy
+
+- **127.0.0.1**: Services proxied via Caddy
+- **0.0.0.0**: Cluster-wide (DNS, NFS, Atuin)
+- **Public**: Only 22, 80, 443 via firewall/router
+
+## Documentation Reference
+
+### Architecture & Vision
+
+- `.meta/ARCHITECTURE.md` - Complete technical design
+- `.meta/VISION.md` - Why schema-first, benefits
+- `.meta/EXAMPLE-FLOW.md` - End-to-end workflow examples
+- `.meta/IMPLEMENTATION-ROADMAP.md` - Build plan
+
+### Operational Knowledge
+
+- `.meta/ai/context.json` - System state, file locations
+- `.meta/ai/knowledge.yml` - Troubleshooting KB
+- `.meta/ai/workflows.yml` - Common procedures
+
+### Infrastructure
+
+- `docs/INFRASTRUCTURE-INDEX.md` - Documentation index
+- `docs/NODE-PROFILES.md` - Cluster nodes
+- `docs/network-spec.md` - Network topology
+- `COOPERATOR-ASPECTS.md` - Complete technical reference (source)
+
+### Schemas
+
+- `.meta/schemas/service.schema.json` - Service definitions
+- `.meta/schemas/domain.schema.json` - Domain routing
+- `.meta/schemas/network.schema.json` - Network config
+- `.meta/schemas/node.schema.json` - Node identity
+
+## Common Tasks Reference
+
+### Check System Health
+
+```bash
+./deploy/verify/verify-all.sh
+systemctl --failed
+docker ps --filter "status=exited"
+df -h /cluster-nas
+```
+
+### Backup & Restore
+
+```bash
+# Backup USB drive
+./scripts/backup-usb-to-nas.sh
+
+# Clone to microSD
+./scripts/clone-usb-to-microsd.sh
+
+# Export current state
+./scripts/sync/export-state.sh
+
+# Import state
+./scripts/sync/import-state.sh
+```
+
+### Sync State to Live System
+
+```bash
+# Export live system config to state files
+./scripts/sync/export-state.sh
+
+# Apply state to live system
+./scripts/sync/apply-state.sh
+```
+
+## Migration Status
+
+**Current Phase**: Foundation (Phase 1)
+
+See `.meta/IMPLEMENTATION-ROADMAP.md` for complete timeline.
+
+### Completed
+
+- ✅ Architecture designed
+- ✅ JSON schemas (basic)
+- ✅ AI knowledge base structure
+- ✅ Documentation complete
+
+### In Progress
+
+- 🚧 State file migration
+- 🚧 Config generators
+- 🚧 Deployment automation
+
+### Not Started
+
+- ⏳ Full testing
+- ⏳ Production cutover
+
+## Getting Help
+
+**If something is unclear**:
+
+1. Check `START-HERE.md`
+2. Check `.meta/ARCHITECTURE.md`
+3. Check `.meta/ai/knowledge.yml`
+4. Check `COOPERATOR-ASPECTS.md` (complete reference)
+
+**For AI assistants**:
+
+- Always check `.meta/ai/context.json` first
+- Query `.meta/ai/knowledge.yml` for troubleshooting
+- Follow schema-first workflow (state → validate → generate → deploy)
+
+## Critical Reminders for AI Assistants
+
+- **Never edit generated configs** - always edit state and regenerate
+- **Always validate** before generating
+- **Always backup** before major changes
+- **Test on microSD clone** when available
+- **Follow the workflow** - state → validate → generate → deploy
