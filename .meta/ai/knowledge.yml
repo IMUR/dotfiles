@@ -1,0 +1,340 @@
+---
+# AI-Queryable Troubleshooting Knowledge Base
+# Format: Structured YAML for AI parsing and human readability
+
+troubleshooting:
+
+  n8n_ui_not_updating:
+    priority: high
+    symptoms:
+      - n8n web interface loads but doesn't show real-time updates
+      - Workflow executions complete but UI doesn't reflect changes
+      - Manual page refresh shows updates
+    root_cause:
+      what: Server-Sent Events (SSE) require unbuffered HTTP streaming
+      why: Default Caddy buffering breaks SSE event stream
+    solution:
+      state_change:
+        file: state/domains.yml
+        field: type
+        value: sse
+        regenerates: [config/caddy/Caddyfile, config/pihole/local-dns.conf]
+      commands:
+        - ./scripts/generate/regenerate-all.sh
+        - ./deploy/deploy gateway
+      verification:
+        - Open n8n UI
+        - Create new workflow
+        - Verify real-time updates appear without refresh
+    caddy_config_detail:
+      required: flush_interval -1
+      example: |
+        n8n.ism.la {
+            reverse_proxy localhost:5678 {
+                flush_interval -1  # Critical for SSE
+            }
+        }
+
+  dns_not_resolving_internally:
+    priority: high
+    symptoms:
+      - "*.ism.la works from internet but not from cluster nodes"
+      - "curl https://n8n.ism.la fails from projector/director"
+      - External IP returned instead of 192.168.254.10
+    root_cause:
+      what: External DNS returns public IP, breaks internal routing
+      why: Without local overrides, cluster nodes route through public IP
+    solution:
+      state_change:
+        file: state/domains.yml
+        ensure: local_ip field set for all domains
+        value: 192.168.254.10
+      commands:
+        - ./scripts/generate/regenerate-all.sh
+        - sudo systemctl restart pihole-FTL
+      verification:
+        - dig @192.168.254.10 n8n.ism.la +short
+        - Should return: 192.168.254.10
+        - curl -I https://n8n.ism.la (from projector)
+    pihole_config_detail:
+      file: /etc/dnsmasq.d/02-custom-local-dns.conf
+      format: address=/DOMAIN/IP
+      example: address=/n8n.ism.la/192.168.254.10
+
+  service_not_starting:
+    priority: high
+    symptoms:
+      - systemctl status SERVICE shows failed/inactive
+      - Service worked before but stopped
+    diagnosis_steps:
+      - check_logs: journalctl -u SERVICE -n 50
+      - check_port_conflict: sudo ss -tlnp | grep PORT
+      - check_dependencies: systemctl list-dependencies SERVICE --failed
+      - check_file_permissions: ls -la /path/to/binary
+    common_causes:
+      port_conflict:
+        how_to_detect: "Error: bind: address already in use"
+        solution: Kill conflicting process or change port in state/services.yml
+      missing_dependency:
+        how_to_detect: "Dependency failed" in logs
+        solution: Check dependencies field in state/services.yml, ensure correct order
+      permission_denied:
+        how_to_detect: "Permission denied" in logs
+        solution: Check user field in state/services.yml, verify file ownership
+
+  caddy_certificate_issues:
+    priority: medium
+    symptoms:
+      - "HTTPS fails with certificate error"
+      - "Caddy logs show Let's Encrypt errors"
+    diagnosis_steps:
+      - check_logs: journalctl -u caddy -n 100 | grep -i error
+      - check_external_dns: dig DOMAIN @8.8.8.8
+      - check_port_forwarding: External port 443 → cooperator:443
+    common_causes:
+      dns_not_propagated:
+        detection: dig returns NXDOMAIN
+        solution: Wait for DNS propagation, check GoDaddy configuration
+      rate_limit:
+        detection: "too many certificates already issued"
+        solution: Wait 7 days or use staging environment
+      port_443_blocked:
+        detection: Let's Encrypt can't reach :443
+        solution: Verify router port forwarding
+
+  docker_container_not_starting:
+    priority: high
+    symptoms:
+      - docker ps doesn't show container
+      - docker ps -a shows container as Exited
+    diagnosis_steps:
+      - check_logs: docker compose -f PATH logs SERVICE
+      - check_volumes: docker volume ls
+      - check_permissions: ls -la /cluster-nas/services/SERVICE/data
+    common_causes:
+      volume_permission:
+        detection: "Permission denied" in container logs
+        solution: sudo chown -R USER:USER /cluster-nas/services/SERVICE/data
+      missing_env:
+        detection: "required environment variable" in logs
+        solution: Check .env file exists and is loaded
+      port_conflict:
+        detection: "port is already allocated"
+        solution: Change port in compose file or stop conflicting container
+
+  nfs_mount_failed:
+    priority: critical
+    symptoms:
+      - "/cluster-nas not accessible"
+      - "mount: wrong fs type, bad option"
+    diagnosis_steps:
+      - check_device: lsblk | grep sda
+      - check_mount: mount | grep cluster-nas
+      - check_fstab: cat /etc/fstab | grep cluster-nas
+      - check_nfs_server: systemctl status nfs-kernel-server
+    solution:
+      manual_mount: sudo mount /dev/sda1 /cluster-nas
+      fix_fstab:
+        file: /etc/fstab
+        entry: "/dev/sda1  /cluster-nas  xfs  defaults  0  2"
+      restart_nfs: sudo systemctl restart nfs-kernel-server
+
+workflows:
+
+  add_new_service:
+    description: Add a completely new service to cooperator
+    steps:
+      - step: 1
+        action: Define service in state/services.yml
+        example: |
+          grafana:
+            type: docker-compose
+            compose_file: config/docker/grafana/compose.yml
+            port: 3001
+            bind: 127.0.0.1
+            enabled: true
+      - step: 2
+        action: Define domain routing in state/domains.yml
+        example: |
+          - fqdn: mon.ism.la
+            service: grafana
+            backend: localhost:3001
+            type: standard
+            local_ip: 192.168.254.10
+      - step: 3
+        action: Create docker compose file
+        path: config/docker/grafana/compose.yml
+      - step: 4
+        action: Deploy service
+        command: ./deploy/deploy service grafana
+      - step: 5
+        action: Verify
+        tests:
+          - systemctl status grafana (if systemd)
+          - docker ps | grep grafana (if docker)
+          - curl -I https://mon.ism.la
+          - dig @localhost mon.ism.la
+
+  modify_existing_service:
+    description: Change configuration of existing service
+    steps:
+      - step: 1
+        action: Edit state/*.yml
+        files:
+          - state/services.yml (for service config)
+          - state/domains.yml (for routing)
+      - step: 2
+        action: Regenerate configs
+        command: ./scripts/generate/regenerate-all.sh
+      - step: 3
+        action: Review generated configs
+        paths:
+          - config/caddy/Caddyfile
+          - config/pihole/local-dns.conf
+      - step: 4
+        action: Deploy changes
+        command: ./deploy/deploy SERVICE_NAME
+      - step: 5
+        action: Verify
+        command: ./deploy/verify/verify-SERVICE.sh
+
+  export_current_state:
+    description: Export live system config back to state files
+    when: After manual changes on live system
+    steps:
+      - step: 1
+        action: Export system to state
+        command: ./scripts/sync/export-state.sh
+      - step: 2
+        action: Review changes
+        command: git diff state/
+      - step: 3
+        action: Validate state
+        command: ./tests/test-state.sh
+      - step: 4
+        action: Commit if valid
+        commands:
+          - git add state/
+          - git commit -m "Update state from live system"
+
+  disaster_recovery:
+    description: Rebuild cooperator from scratch
+    prerequisites:
+      - Fresh Raspberry Pi OS Lite installation
+      - /cluster-nas drive connected (/dev/sda1)
+      - Network connectivity
+    steps:
+      - step: 1
+        action: Clone repository
+        command: git clone /cluster-nas/repos/crtr-config.git ~/crtr-config
+      - step: 2
+        action: Full deployment
+        command: cd ~/crtr-config && ./deploy/deploy all
+      - step: 3
+        action: Comprehensive verification
+        command: ./deploy/verify/verify-all.sh
+    time_estimate: 20-30 minutes
+    outcome: Fully operational cooperator identical to pre-disaster state
+
+reverse_proxy_patterns:
+
+  standard:
+    description: Standard HTTP service
+    state_type: standard
+    caddy_generated: |
+      service.ism.la {
+          reverse_proxy BACKEND
+      }
+
+  websocket:
+    description: WebSocket-enabled service
+    state_type: websocket
+    use_cases: [gotty, terminal services]
+    caddy_generated: |
+      service.ism.la {
+          reverse_proxy BACKEND {
+              header_up Upgrade {>Upgrade}
+              header_up Connection {>Connection}
+          }
+      }
+
+  sse:
+    description: Server-Sent Events
+    state_type: sse
+    use_cases: [n8n, real-time dashboards]
+    critical_config: flush_interval -1
+    caddy_generated: |
+      service.ism.la {
+          reverse_proxy BACKEND {
+              flush_interval -1
+          }
+      }
+
+  https_backend:
+    description: HTTPS backend with self-signed cert
+    state_type: https_backend
+    use_cases: [cockpit]
+    caddy_generated: |
+      service.ism.la {
+          reverse_proxy https://BACKEND {
+              transport http {
+                  tls_insecure_skip_verify
+              }
+          }
+      }
+
+service_binding_patterns:
+
+  localhost_only:
+    bind: 127.0.0.1
+    use_case: Services proxied via Caddy
+    examples: [n8n, semaphore, gotty]
+    rationale: Defense in depth - only Caddy exposed externally
+
+  cluster_wide:
+    bind: 0.0.0.0
+    use_case: Services accessed directly by cluster nodes
+    examples: [atuin (8811), DNS (53), NFS (2049)]
+    rationale: Inter-node communication required
+
+  external:
+    bind: 0.0.0.0
+    use_case: Externally accessible gateway services
+    examples: [SSH (22), Caddy (80/443)]
+    rationale: Gateway role requires external access
+
+state_change_impacts:
+
+  domains_yml_change:
+    triggers_regeneration:
+      - config/caddy/Caddyfile
+      - config/pihole/local-dns.conf
+      - docs/SERVICES.md
+    requires_restart:
+      - caddy.service
+      - pihole-FTL.service
+    verification:
+      - curl -I https://DOMAIN
+      - dig @localhost DOMAIN +short
+
+  services_yml_change:
+    triggers_regeneration:
+      - config/systemd/*.service (if systemd service)
+      - config/docker/*/compose.yml (if docker service)
+      - docs/SERVICES.md
+    requires_action:
+      - systemctl daemon-reload (if systemd changed)
+      - docker compose up -d (if compose changed)
+    verification:
+      - systemctl status SERVICE
+      - docker ps (if docker)
+
+meta:
+  version: 1.0.0
+  last_updated: 2025-10-07
+  structure: AI-queryable YAML knowledge base
+  usage:
+    - AI can query by symptom, service, or workflow
+    - Provides exact state changes and commands
+    - Includes verification steps
+    - Links symptoms to root causes
