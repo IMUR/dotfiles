@@ -1,0 +1,48 @@
+# GENERATED FILE - DO NOT EDIT MANUALLY
+# Generated from: state/services.yml
+# Template: .meta/generation/systemd-unit.j2
+# Service: {{ service_name }}
+# Generated at: {{ timestamp }}
+#
+# To regenerate: ./scripts/generate/regenerate-all.sh
+
+[Unit]
+Description={{ service.description | default(service_name ~ ' service') }}
+After=network.target{% if service.dependencies %} {{ service.dependencies | join('.service ') }}.service{% endif %}
+
+{% if service.dependencies %}
+Requires={{ service.dependencies | join('.service ') }}.service
+{% endif %}
+
+[Service]
+Type=simple
+{% if service.user %}
+User={{ service.user }}
+{% endif %}
+{% if service.user %}
+Group={{ service.user }}
+{% endif %}
+ExecStart={{ service.binary }}{% if service.args %} {{ service.args }}{% endif %}
+
+{% if service.data %}
+WorkingDirectory={{ service.data }}
+{% endif %}
+
+{% if service.env_file %}
+EnvironmentFile={{ service.env_file }}
+{% endif %}
+
+Restart={{ service.restart | default('on-failure') }}
+RestartSec=10
+
+# Security hardening
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=read-only
+{% if service.data %}
+ReadWritePaths={{ service.data }}
+{% endif %}
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,31 @@
+# GENERATED FILE - DO NOT EDIT MANUALLY
+# Generated from: state/services.yml
+# Template: .meta/generation/docker-compose.j2
+# Service: {{ service_name }}
+# Generated at: {{ timestamp }}
+#
+# To regenerate: ./scripts/generate/regenerate-all.sh
+
+version: '3.8'
+
+services:
+  {{ service_name }}:
+    image: {{ service.image }}
+    container_name: {{ service_name }}
+    restart: {{ service.restart | default('unless-stopped') }}
+    ports:
+      - "{{ service.bind }}:{{ service.port }}:{{ service.port }}"
+{% if service.data %}
+    volumes:
+      - {{ service.data }}:/data
+{% endif %}
+{% if service.env_file %}
+    environment_file:
+      - {{ service.env_file }}
+{% endif %}
+    networks:
+      - {{ service_name }}-network
+
+networks:
+  {{ service_name }}-network:
+    driver: bridge

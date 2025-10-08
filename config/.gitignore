@@ -1,0 +1,7 @@
+# Generated config files - do not commit
+# These are auto-generated from state/*.yml
+# To regenerate: ./scripts/generate/regenerate-all.sh
+
+*
+!.gitignore
+!README.md
