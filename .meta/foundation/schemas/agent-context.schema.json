@@ -1,0 +1,83 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://colab.internal/schemas/agent-context.json",
+  "title": ".agent-context.json Schema",
+  "description": "Directory-specific AI operational context",
+  "type": "object",
+  "required": ["directory", "purpose", "operational_boundaries"],
+  "properties": {
+    "directory": {
+      "type": "string",
+      "description": "Directory path relative to root"
+    },
+    "purpose": {
+      "type": "string",
+      "description": "What this directory contains and why"
+    },
+    "scope": {
+      "type": "string",
+      "enum": ["cluster-wide", "node-specific", "service-specific", "shared"]
+    },
+    "operational_boundaries": {
+      "type": "object",
+      "required": ["ai_can", "ai_requires_approval"],
+      "properties": {
+        "ai_can": {
+          "type": "array",
+          "items": {"type": "string"},
+          "description": "Actions AI can take autonomously"
+        },
+        "ai_requires_approval": {
+          "type": "array",
+          "items": {"type": "string"},
+          "description": "Actions requiring human approval"
+        },
+        "ai_forbidden": {
+          "type": "array",
+          "items": {"type": "string"},
+          "description": "Actions AI must never take"
+        }
+      }
+    },
+    "key_files": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["file", "purpose"],
+        "properties": {
+          "file": {"type": "string"},
+          "purpose": {"type": "string"},
+          "editable": {"type": "boolean"}
+        }
+      }
+    },
+    "validation": {
+      "type": "object",
+      "properties": {
+        "commands": {
+          "type": "array",
+          "items": {"type": "string"}
+        },
+        "required_before": {
+          "type": "string",
+          "enum": ["commit", "deploy", "apply", "execute"]
+        }
+      }
+    },
+    "workflows": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["name", "steps"],
+        "properties": {
+          "name": {"type": "string"},
+          "description": {"type": "string"},
+          "steps": {
+            "type": "array",
+            "items": {"type": "string"}
+          }
+        }
+      }
+    }
+  }
+}

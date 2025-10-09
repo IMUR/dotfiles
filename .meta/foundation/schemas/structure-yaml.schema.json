@@ -1,0 +1,58 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://colab.internal/schemas/structure-yaml.json",
+  "title": "structure.yaml Schema",
+  "description": "Machine-readable repository structure definition",
+  "type": "object",
+  "required": ["version", "repository", "structure"],
+  "properties": {
+    "version": {
+      "type": "string",
+      "pattern": "^\\d+\\.\\d+$",
+      "description": "Schema version (e.g., '2.1')"
+    },
+    "repository": {
+      "type": "object",
+      "required": ["name", "purpose", "type"],
+      "properties": {
+        "name": {"type": "string"},
+        "purpose": {"type": "string"},
+        "type": {
+          "type": "string",
+          "enum": ["cluster-config", "node-config", "service", "library"]
+        },
+        "nodes": {
+          "type": "array",
+          "items": {"type": "string"}
+        }
+      }
+    },
+    "structure": {
+      "type": "object",
+      "description": "Directory structure with descriptions",
+      "patternProperties": {
+        "^[a-zA-Z0-9_.-]+/$": {
+          "type": "object",
+          "required": ["purpose"],
+          "properties": {
+            "purpose": {"type": "string"},
+            "status": {
+              "type": "string",
+              "enum": ["active", "aspirational", "deprecated"]
+            },
+            "contains": {"type": "string"},
+            "context_file": {"type": "string"}
+          }
+        }
+      }
+    },
+    "meta": {
+      "type": "object",
+      "properties": {
+        "last_verified": {"type": "string", "format": "date"},
+        "generated": {"type": "boolean"},
+        "generator_script": {"type": "string"}
+      }
+    }
+  }
+}

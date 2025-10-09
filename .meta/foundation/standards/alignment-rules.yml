@@ -1,0 +1,208 @@
+alignment_config:
+  version: "2.0"
+  last_updated: "2025-10-06"
+  purpose: "Define documentation alignment rules and sources of truth"
+  paradigm_shift: "2025-10-06 - Moved to dynamic SSOT from live infrastructure queries"
+
+  # TIER 0: Dynamic SSOT - Auto-generated from live infrastructure
+  # This is the ONLY authoritative source - everything else derives from this
+  tier_0_dynamic_ssot:
+    - path: "scripts/ssot/infrastructure-truth.yaml"
+      type: "dynamic_ssot"
+      authority_level: "absolute"
+      source: "auto-collected from live infrastructure"
+      collectors:
+        - "GoDaddy DNS API (real-time)"
+        - "SSH queries to all nodes (real-time)"
+        - "Docker container status (real-time)"
+        - "Systemd service status (real-time)"
+      update_command: "./scripts/ssot/ssot discover"
+      validate_command: "./scripts/ssot/ssot validate"
+      last_discovered: "auto-updated on each run"
+      contains:
+        - "DNS records from GoDaddy API"
+        - "Hardware specifications from SSH queries"
+        - "Running services from systemd/Docker"
+        - "Network configuration from live state"
+        - "Container inventory from Docker"
+
+      validation:
+        method: "compare YAML vs live infrastructure"
+        frequency: "on-demand or automated"
+        hash_tracking: true
+
+  # TIER 1: Static reference files - NOW DEPRECATED in favor of SSOT
+  # These files are kept for historical reference only
+  tier_1_deprecated_static:
+    - path: "ism.la.txt"
+      type: "dns_zone_file_static"
+      authority_level: "deprecated"
+      deprecated_date: "2025-10-06"
+      replacement: "scripts/ssot/infrastructure-truth.yaml (dns.records)"
+      reason: "Static snapshot from Oct 5 - use GoDaddy API instead"
+      status: "DO NOT USE - query API via SSOT system"
+
+    - path: "SESSION-NOTES-2025-10-06.md"
+      type: "deployment_notes"
+      authority_level: "historical"
+      purpose: "Session documentation for reference"
+      relationship_to_ssot: "Initial data source, superseded by live queries"
+
+    - path: ".stems/network-spec.md"
+      type: "derived_documentation"
+      authority_level: "derived"
+      source: "documented from deployment session"
+      should_regenerate_from: "scripts/ssot/infrastructure-truth.yaml"
+      last_updated: "2025-10-06"
+
+    - path: ".stems/NODE-PROFILES.md"
+      type: "hardware_specifications"
+      authority_level: "derived"
+      source: "manual hardware inspection"
+      should_regenerate_from: "scripts/ssot/infrastructure-truth.yaml (nodes.*)"
+      last_updated: "2025-09-30"
+      status: "Will become stale - regenerate from SSOT"
+
+  # TIER 2: Operational configuration (still authoritative for agent behavior)
+  tier_2_operational_config:
+    - path: ".agent-context.json"
+      type: "operational_boundaries"
+      authority_level: "definitive"
+      scope: "AI agent behavior only"
+      contains:
+        - "AI agent constraints"
+        - "validation requirements"
+        - "workflow patterns"
+
+  # Target documents - these should align with sources of truth
+  target_documents:
+    architecture:
+      - path: "docs/architecture/NETWORK-TOPOLOGY.md"
+        expected_sync_with:
+          - "ism.la.txt"
+          - ".stems/network-spec.md"
+        last_verified: "2025-09-27"
+        status: "outdated"
+        known_conflicts:
+          - "uses pihole.ism.la instead of dns.ism.la"
+          - "shows archon.ism.la:8181 instead of acn.ism.la:3737"
+          - "missing n8n.ism.la deployment"
+          - "shows theoretical wildcard Caddy config vs actual individual services"
+
+      - path: "docs/architecture/CLUSTER-ARCHITECTURE.md"
+        expected_sync_with:
+          - ".stems/NODE-PROFILES.md"
+        last_verified: "2025-09-27"
+        status: "outdated"
+        known_conflicts:
+          - "uses rounded RAM specs (128GB vs actual 126GB)"
+          - "missing precise storage specifications"
+          - "RTX 2080 vs RTX 2080 Mobile"
+
+      - path: "docs/architecture/HYBRID-STRATEGY.md"
+        expected_sync_with:
+          - "dotfiles/"
+          - "ansible/"
+        last_verified: "2025-09-27"
+        status: "mostly_current"
+        known_conflicts: []
+
+    structure:
+      - path: "structure.yaml"
+        expected_sync_with:
+          - "actual_directory_structure"
+          - "existing_validation_scripts"
+        last_verified: "2025-09-27"
+        status: "references_missing_files"
+        known_conflicts:
+          - "references scripts/validation/check-dotfiles.sh (doesn't exist)"
+          - "references scripts/validation/check-ansible.sh (doesn't exist)"
+          - "references scripts/validation/check-services.sh (doesn't exist)"
+          - "references ansible/.agent-context.json (now exists)"
+          - "references services/.agent-context.json (now exists)"
+
+      - path: "README.md"
+        expected_sync_with:
+          - "actual_directory_structure"
+        last_verified: "2025-01-27"
+        status: "current"
+        known_conflicts: []
+
+  # Alignment rules for semantic matching - ALL NOW REFERENCE SSOT
+  alignment_rules:
+    service_domains:
+      pattern: "*.ism.la domain references"
+      source_authority: "scripts/ssot/infrastructure-truth.yaml (dns.records)"
+      validation: "must_match_godaddy_api_via_ssot"
+      query_method: "./scripts/ssot/ssot discover (updates from GoDaddy API)"
+      examples:
+        correct: "dns.ism.la, n8n.ism.la, acn.ism.la (from live DNS)"
+        incorrect: "pihole.ism.la, archon.ism.la (not in live DNS)"
+      note: "DNS is queried in real-time, not from static file"
+
+    hardware_specifications:
+      pattern: "RAM|GPU|Storage|CPU specifications"
+      source_authority: "scripts/ssot/infrastructure-truth.yaml (nodes.*.hardware)"
+      validation: "use_exact_values_from_ssh_queries"
+      query_method: "SSH to nodes, collect live hardware specs"
+      examples:
+        correct: "Values from SSOT YAML (collected via SSH)"
+        incorrect: "Rounded or estimated values"
+      note: "Hardware specs from lscpu/free/nvidia-smi via SSH"
+
+    deployment_state:
+      pattern: "deployed|running|configured|active services"
+      source_authority: "scripts/ssot/infrastructure-truth.yaml (nodes.*.services)"
+      validation: "reflect_actual_running_services"
+      query_method: "systemctl/docker ps via SSH"
+      examples:
+        correct: "Services listed in SSOT (actually running)"
+        incorrect: "Services not in SSOT or not running"
+      note: "Service state from live systemd/Docker queries"
+
+    network_configuration:
+      pattern: "IP addresses|network topology|service routing"
+      source_authority: "scripts/ssot/infrastructure-truth.yaml (nodes.*.network)"
+      validation: "use_actual_network_state"
+      query_method: "SSH queries for ip/routes/interfaces"
+      examples:
+        correct: "IPs and config from SSOT"
+        incorrect: "Outdated or theoretical network config"
+
+    file_references:
+      pattern: "references to scripts|files|directories"
+      source_authority: "actual_filesystem"
+      validation: "only_reference_existing_files"
+      query_method: "filesystem scan or git ls-files"
+      examples:
+        correct: "scripts/validation/check-dotfiles.sh (exists)"
+        incorrect: "scripts/missing/file.sh (doesn't exist)"
+
+  # Semantic similarity thresholds
+  semantic_thresholds:
+    conflict_detection: 0.70    # Similarity < 0.70 = potential conflict
+    review_recommended: 0.85    # Similarity < 0.85 = review recommended
+    high_confidence: 0.95       # Similarity >= 0.95 = well aligned
+
+  # Vector database configuration (for future agent)
+  vector_db_config:
+    service_url: "http://192.168.254.20:8055"
+    embedding_model: "nomic-embed-text"
+    collection_name: "colab_docs_alignment"
+    chunk_size: 500
+    chunk_overlap: 50
+
+  # Output configuration
+  report_config:
+    output_directory: ".meta/alignment-reports"
+    report_format: "markdown"
+    include_similarity_scores: true
+    include_rollback_commands: true
+    include_source_citations: true
+
+  # Safety settings
+  safety:
+    require_approval_for_changes: true
+    preserve_git_history: true
+    create_backup_before_changes: true
+    dry_run_by_default: true

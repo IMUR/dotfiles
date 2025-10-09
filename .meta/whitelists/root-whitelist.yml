@@ -1,0 +1,156 @@
+# Root Directory Whitelist
+# Defines which files are allowed to exist in repository root
+# Any file not on this list will be flagged for automatic processing
+
+version: "1.0"
+last_updated: "2025-10-07"
+purpose: "Prevent root directory clutter through policy-driven file organization"
+
+# Files explicitly allowed in root directory
+whitelist:
+
+  # Category: Navigation & Discovery Documents
+  navigation_docs:
+    - README.md              # Primary entry point for repository
+    - START-HERE.md          # Quick navigation guide by role/task
+    - AGENTS.md              # AI agent operational boundaries
+    - CLAUDE.md              # Claude Code specific guidance
+
+  # Category: Machine-Readable Structure Files
+  structure_files:
+    - structure.yaml         # Repository structure definition
+    - .chezmoiroot          # Chezmoi source directory configuration
+    - .gitignore            # Git exclusion patterns
+    - .gitattributes        # Git file handling rules (if exists)
+
+  # Category: Root-Only Configuration Files
+  # These MUST exist in root for tools to function
+  root_required_configs:
+    - docker-compose.yml    # Root-level services (if any)
+    - Makefile              # Build/automation targets (if any)
+    - package.json          # Node/npm configuration (if any)
+    - pyproject.toml        # Python project config (if any)
+
+  # Category: Standard Dotfiles
+  standard_dotfiles:
+    - .editorconfig         # Editor configuration
+    - .shellcheckrc         # Shell script linting config
+    - .markdownlint.json    # Markdown linting config
+    - .yamllint.yml         # YAML linting config
+
+# Directories allowed to exist in root
+allowed_directories:
+  - dotfiles/              # User environment configuration (Chezmoi)
+  - ansible/               # System automation (Ansible playbooks)
+  - services/              # Service configurations (Docker Compose)
+  - scripts/               # Automation and validation scripts
+  - docs/                  # Documentation (architecture, guides, etc.)
+  - .meta/                 # Repository meta-management files
+  - .stems/                # Advanced documentation patterns
+  - .sessions/             # Session artifacts and working documents
+  - .specs/                # Technical specifications
+  - .working/              # Draft documents and TODOs
+  - .git/                  # Git internal directory
+  - .github/               # GitHub configuration (if exists)
+
+# Auto-processing rules for files not on whitelist
+auto_processing:
+
+  # Session artifacts (dated, narrative, time-bound)
+  session_patterns:
+    - pattern: "*-SETUP.md"
+      description: "Setup documentation from sessions"
+      destination: ".sessions/{date}-{topic}/"
+      extract_date: "filename"
+
+    - pattern: "*-TEST-RESULTS.md"
+      description: "Test results and validation output"
+      destination: ".sessions/{date}-{topic}/"
+      extract_date: "filename"
+
+    - pattern: "*-COMPLETE.md"
+      description: "Session completion summaries"
+      destination: ".sessions/{date}-{topic}/"
+      extract_date: "filename"
+
+    - pattern: "SESSION-NOTES-*.md"
+      description: "Session notes and working documentation"
+      destination: ".sessions/{date}-session-notes/"
+      extract_date: "filename"
+
+  # Technical specifications and format definitions
+  spec_patterns:
+    - pattern: "*-specification.md"
+      description: "Technical format specifications"
+      destination: ".specs/"
+
+    - pattern: "*-format.md"
+      description: "Format definition documents"
+      destination: ".specs/"
+
+    - pattern: "*-schema.yml"
+      description: "Data schema definitions"
+      destination: ".specs/"
+
+    - pattern: "*-schema.json"
+      description: "JSON schema definitions"
+      destination: ".specs/"
+
+  # Backup files
+  backup_patterns:
+    - pattern: "*.backup-*"
+      description: "Dated backup files"
+      destination: ".sessions/backups/"
+
+    - pattern: "*.bak"
+      description: "Generic backup files"
+      destination: ".sessions/backups/"
+
+    - pattern: "*.orig"
+      description: "Original/merge backup files"
+      destination: ".sessions/backups/"
+
+  # Working/draft documents
+  working_patterns:
+    - pattern: "TODO-*.md"
+      description: "TODO lists"
+      destination: ".working/"
+
+    - pattern: "DRAFT-*.md"
+      description: "Draft documents"
+      destination: ".working/"
+
+    - pattern: "WIP-*.md"
+      description: "Work-in-progress documents"
+      destination: ".working/"
+
+# Enforcement configuration
+enforcement:
+  check_on_commit: true           # Run whitelist check in pre-commit hook
+  auto_fix: false                 # Manual approval required for moves
+  report_violations: true         # Always report violations
+  strict_mode: true              # Fail commit if violations found
+
+  # Grace period for new files (days)
+  grace_period: 0                 # Immediate enforcement
+
+  # Exceptions (temporary overrides with expiry)
+  exceptions: []
+  # Example:
+  # - file: "temporary-note.md"
+  #   reason: "Active working document"
+  #   expires: "2025-10-15"
+  #   approved_by: "user"
+
+# Validation script
+validation:
+  script: ".meta/whitelists/check-root-whitelist.sh"
+  usage: |
+    # Check for violations
+    ./.meta/whitelists/check-root-whitelist.sh
+
+    # Check and show suggested moves
+    ./.meta/whitelists/check-root-whitelist.sh --suggest
+
+    # Auto-fix violations (moves files)
+    ./.meta/whitelists/check-root-whitelist.sh --fix

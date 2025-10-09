@@ -1,0 +1,428 @@
+# Document Formatting and Linting Standards
+# Purpose-based rules for consistent documentation across the repository
+# Different document types have different requirements
+
+version: "1.0"
+last_updated: "2025-10-07"
+purpose: "Enforce consistent, purpose-appropriate formatting across all documentation"
+
+# Rule sets organized by document purpose
+formatting_standards:
+
+  # =============================================================================
+  # Rule Set 1: Navigation Documents
+  # Files: README.md, START-HERE.md, AGENTS.md, CLAUDE.md
+  # Purpose: Help users and AI agents discover and understand the repository
+  # Strictness: HIGH - these are critical entry points
+  # =============================================================================
+  navigation:
+    strictness: high
+    applies_to:
+      - "README.md"
+      - "START-HERE.md"
+      - "AGENTS.md"
+      - "CLAUDE.md"
+
+    markdown:
+      line_length: 120               # Maximum line length
+      heading_style: "atx"            # Use # not underlines
+      heading_increment: true         # No skipping levels (h1 -> h3)
+      list_marker_style: "-"          # Use - for bullets
+      ordered_list_marker: "."        # Use 1. not 1)
+      emphasis_style: "*"             # Use * not _
+      code_fence_style: "```"         # Use ``` not ~~~
+      hard_line_breaks: false         # No trailing spaces for breaks
+
+    # AI-ACTIONABLE FORMATTING INSTRUCTIONS
+    ai_formatting_rules:
+      headings:
+        rule: "Always add blank line before AND after headings"
+        example: |
+          Content before heading.
+
+          ## Section Title
+
+          Content after heading starts here.
+
+      code_blocks:
+        rule: "Always add blank line before AND after code blocks; ALWAYS specify language"
+        example: |
+          Text before code block.
+
+          ```bash
+          command here
+          ```
+
+          Text after code block.
+
+      lists:
+        rule: "Always add blank line before AND after lists"
+        example: |
+          Text before list.
+
+          - Item 1
+          - Item 2
+          - Item 3
+
+          Text after list.
+
+      file_ending:
+        rule: "ALWAYS end file with exactly one newline (blank line at end)"
+        example: "Last line of content\n"
+
+      emphasis:
+        rule: "Use *asterisks* for emphasis, not _underscores_"
+        example: "*emphasized text* and **bold text**"
+
+    structure:
+      require_frontmatter: true
+      frontmatter_format: "yaml"      # YAML front matter
+      frontmatter_required_fields:
+        - meta.purpose
+        - meta.audience
+        - meta.last_updated
+
+      require_sections:                # Must have these sections
+        - "Overview" or "Quick Start" or "Purpose"
+
+      recommended_sections:
+        - "Quick Start"
+        - "Common Operations" or "Essential Commands"
+        - "Navigation" or "Directory Structure"
+
+      max_heading_depth: 3             # Don't go deeper than h3
+      table_of_contents: optional
+
+    validation:
+      check_internal_links: true       # Validate links to other repo files
+      check_external_links: false      # Don't validate external URLs
+      check_cross_references: true     # Validate references to other docs
+      spell_check: false               # Too noisy for technical docs
+      check_code_blocks: false         # Don't lint code examples
+
+  # =============================================================================
+  # Rule Set 2: Session Artifacts
+  # Location: .sessions/
+  # Purpose: Working documents, notes, test results from specific sessions
+  # Strictness: LOW - these are informal, time-bound artifacts
+  # =============================================================================
+  session_artifacts:
+    strictness: low
+    applies_to_dirs:
+      - ".sessions/"
+
+    markdown:
+      line_length: null                # No limit
+      heading_style: any               # Allow any style
+      allow_raw_html: true             # Allow HTML in markdown
+      allow_inline_styles: true        # Allow style attributes
+
+    structure:
+      require_frontmatter: false       # Optional
+      frontmatter_optional_fields:
+        - date
+        - session
+        - status
+      require_sections: []             # Freeform
+      max_heading_depth: null          # No limit
+
+    validation:
+      check_internal_links: false      # Don't validate
+      check_external_links: false
+      check_cross_references: false
+      spell_check: false
+
+    # AI-ACTIONABLE FORMATTING INSTRUCTIONS
+    ai_formatting_rules:
+      file_ending:
+        rule: "End file with single newline (minimal formatting requirement)"
+        note: "All other formatting flexible for session notes"
+
+  # =============================================================================
+  # Rule Set 3: Technical Specifications
+  # Location: .specs/
+  # Purpose: Formal technical specifications, schemas, format definitions
+  # Strictness: VERY HIGH - these are reference documents
+  # =============================================================================
+  specifications:
+    strictness: very_high
+    applies_to_dirs:
+      - ".specs/"
+    applies_to_patterns:
+      - "*-specification.md"
+      - "*-format.md"
+      - "*-schema.yml"
+
+    markdown:
+      line_length: 100
+      heading_style: "atx"
+      code_fence_language_required: true  # Must specify language in ```
+      allow_raw_html: false
+
+    structure:
+      require_frontmatter: true
+      frontmatter_required_fields:
+        - meta.version
+        - meta.status              # draft|stable|deprecated
+        - meta.last_updated
+        - meta.purpose
+
+      require_sections:
+        - "Overview" or "Purpose"
+        - "Specification"
+        - "Validation" or "Compliance"
+
+      recommended_sections:
+        - "Examples"
+        - "Schema"
+        - "References"
+
+      max_heading_depth: 4
+
+    validation:
+      check_internal_links: true
+      check_code_examples: true        # Validate syntax of code blocks
+      require_examples: true           # Must include examples
+      schema_validation: true          # Validate against schema if present
+
+    # AI-ACTIONABLE FORMATTING INSTRUCTIONS
+    ai_formatting_rules:
+      headings:
+        rule: "Blank line before AND after all headings; use # syntax only"
+        strictness: "Very strict - no exceptions"
+
+      code_blocks:
+        rule: "Blank line before AND after; MUST specify language; no raw HTML"
+        example: |
+
+          ```yaml
+          key: value
+          ```
+
+
+      lists:
+        rule: "Blank line before AND after lists"
+        strictness: "Very strict"
+
+      file_ending:
+        rule: "MUST end with exactly one newline"
+        strictness: "Very strict - technical specs must be perfectly formatted"
+
+      line_length:
+        rule: "Keep lines under 100 characters when possible"
+        note: "Exceptions for code blocks and URLs"
+
+  # =============================================================================
+  # Rule Set 4: Component Documentation
+  # Location: dotfiles/, ansible/, services/, scripts/
+  # Purpose: Component-specific READMEs and guides
+  # Strictness: HIGH - these guide actual operations
+  # =============================================================================
+  component_docs:
+    strictness: high
+    applies_to:
+      - "dotfiles/README.md"
+      - "ansible/README.md"
+      - "services/README.md"
+      - "scripts/README.md"
+      - "*/README.md"              # Any component README
+
+    markdown:
+      line_length: 120
+      heading_style: "atx"
+      code_fence_language_required: true
+
+    structure:
+      require_frontmatter: false       # Optional for component READMEs
+
+      require_sections:
+        - "Overview" or "Purpose"
+        - "Usage" or "Quick Start"
+
+      recommended_sections:
+        - "Common Operations"
+        - "Examples"
+        - "Troubleshooting"
+        - "Safety Notes" or "Important Notes"
+
+    validation:
+      check_internal_links: true
+      check_cross_references: true
+      check_code_examples: true
+
+    # AI-ACTIONABLE FORMATTING INSTRUCTIONS
+    ai_formatting_rules:
+      headings:
+        rule: "Blank line before AND after headings"
+
+      code_blocks:
+        rule: "Blank line before AND after; ALWAYS specify language (bash, yaml, json, etc.)"
+
+      lists:
+        rule: "Blank line before AND after lists"
+
+      file_ending:
+        rule: "End file with single newline"
+
+  # =============================================================================
+  # Rule Set 5: Architecture Documentation
+  # Location: docs/architecture/
+  # Purpose: System design, topology, architecture decisions
+  # Strictness: HIGH - critical for understanding system design
+  # =============================================================================
+  architecture_docs:
+    strictness: high
+    applies_to_dirs:
+      - "docs/architecture/"
+
+    markdown:
+      line_length: 120
+      heading_style: "atx"
+      allow_diagrams: true             # ASCII art, mermaid, etc.
+
+    structure:
+      require_frontmatter: true
+      frontmatter_required_fields:
+        - meta.purpose
+        - meta.last_verified          # When was this last checked?
+        - meta.source_of_truth_refs   # What SSOT sections does this reference?
+
+      require_sections:
+        - "Overview"
+        - "Current State" or "Implementation"
+
+      recommended_sections:
+        - "Rationale" or "Why"
+        - "Known Issues"
+        - "References"
+
+    validation:
+      check_internal_links: true
+      check_cross_references: true
+      check_ssot_alignment: true       # Custom: check against SSOT
+
+    # AI-ACTIONABLE FORMATTING INSTRUCTIONS
+    ai_formatting_rules:
+      headings:
+        rule: "Blank line before AND after headings"
+
+      code_blocks:
+        rule: "Blank line before AND after code blocks; specify language when applicable"
+        note: "Plain text blocks (output, logs) can use ```text or no language"
+
+      lists:
+        rule: "Blank line before AND after lists"
+
+      file_ending:
+        rule: "End file with single newline"
+
+      frontmatter:
+        rule: "MUST include frontmatter with meta.purpose, meta.last_verified, meta.source_of_truth_refs"
+        example: |
+          ---
+          meta:
+            purpose: "Describe the system architecture"
+            last_verified: "2025-10-07"
+            source_of_truth_refs: ["scripts/ssot/infrastructure-truth.yaml"]
+          ---
+
+  # =============================================================================
+  # Rule Set 6: Machine-Readable Data Files
+  # Files: *.yml, *.yaml, *.json
+  # Purpose: Configuration, structure definitions, data files
+  # Strictness: VERY HIGH - these must be parseable and valid
+  # =============================================================================
+  structured_data:
+    strictness: very_high
+
+    yaml:
+      indent: 2
+      quotes: "prefer_double"          # Prefer "foo" over 'foo'
+      quote_keys: false                # Don't quote keys unless necessary
+      trailing_newline: required
+      max_line_length: 120
+      allow_duplicate_keys: false
+      explicit_start: false            # Don't require ---
+      explicit_end: false              # Don't require ...
+
+    json:
+      indent: 2
+      trailing_newline: required
+      sort_keys: false                 # Preserve intentional ordering
+      allow_comments: false            # JSON doesn't support comments
+      strict_mode: true
+
+    validation:
+      schema_validation: required      # Must validate against schema
+      no_undefined_keys: true          # All keys must be in schema
+      type_checking: strict            # Enforce types strictly
+
+# Linting tool configuration
+linting_tools:
+
+  markdown:
+    primary: "markdownlint"
+    config_file: ".markdownlint.json"
+    per_ruleset_overrides: true        # Each ruleset can override config
+    ignore_patterns:
+      - ".sessions/**"                 # Don't lint session artifacts
+      - "node_modules/**"
+      - ".git/**"
+
+  yaml:
+    primary: "yamllint"
+    config_file: ".yamllint.yml"
+    strict_mode: true
+
+  json:
+    primary: "jsonlint"
+    strict: true
+    allow_comments: false
+
+  shell_scripts:
+    primary: "shellcheck"
+    config_file: ".shellcheckrc"
+    severity: "warning"                # Fail on warnings or above
+
+  custom_validators:
+    - name: "cross-reference-checker"
+      script: "scripts/validation/check-cross-refs.sh"
+      description: "Validate cross-references between documents"
+
+    - name: "frontmatter-validator"
+      script: "scripts/validation/check-frontmatter.sh"
+      description: "Validate YAML frontmatter in markdown files"
+
+    - name: "ssot-alignment-checker"
+      script: "scripts/validation/check-ssot-alignment.sh"
+      description: "Check architecture docs against SSOT"
+
+# Enforcement configuration
+enforcement:
+  pre_commit: true                     # Run linting in pre-commit hook
+  ci_cd: true                          # Run in CI/CD pipeline
+  fail_on_error: true                  # Fail commit/build on violations
+  fail_on_warning: false               # Allow warnings
+
+  auto_fix:
+    enabled: true                      # Auto-fix simple issues
+    safe_fixes_only: true              # Only apply safe auto-fixes
+    require_approval: false            # Auto-apply safe fixes
+
+# Exemptions
+exemptions:
+  # Files that don't need to follow standards
+  exempt_files:
+    - ".git/**"
+    - "node_modules/**"
+    - "*.min.js"
+    - "*.bundle.*"
+
+  # Temporary exemptions (with expiry)
+  temporary:
+    []
+    # Example:
+    # - file: "docs/legacy/old-guide.md"
+    #   rules: ["navigation"]
+    #   reason: "Legacy doc, will be replaced"
+    #   expires: "2025-12-31"

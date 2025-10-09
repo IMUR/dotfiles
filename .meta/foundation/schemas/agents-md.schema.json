@@ -1,0 +1,76 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://colab.internal/schemas/agents-md.json",
+  "title": "AGENTS.md Schema",
+  "description": "Schema for AI agent operational boundaries document",
+  "type": "object",
+  "required": ["frontmatter", "sections"],
+  "properties": {
+    "frontmatter": {
+      "type": "object",
+      "required": ["title", "purpose", "last_updated"],
+      "properties": {
+        "title": {
+          "type": "string",
+          "const": "AI Agent Operational Boundaries"
+        },
+        "purpose": {
+          "type": "string"
+        },
+        "last_updated": {
+          "type": "string",
+          "format": "date"
+        }
+      }
+    },
+    "sections": {
+      "type": "object",
+      "required": ["safety_rules", "operational_boundaries", "directory_context"],
+      "properties": {
+        "safety_rules": {
+          "type": "object",
+          "description": "Critical safety constraints",
+          "required": ["forbidden_actions", "approval_required"],
+          "properties": {
+            "forbidden_actions": {
+              "type": "array",
+              "items": {"type": "string"}
+            },
+            "approval_required": {
+              "type": "array",
+              "items": {"type": "string"}
+            }
+          }
+        },
+        "operational_boundaries": {
+          "type": "object",
+          "description": "What AI can/cannot do",
+          "required": ["permitted", "restricted"],
+          "properties": {
+            "permitted": {
+              "type": "array",
+              "items": {"type": "string"}
+            },
+            "restricted": {
+              "type": "array",
+              "items": {"type": "string"}
+            }
+          }
+        },
+        "directory_context": {
+          "type": "array",
+          "description": "References to directory-specific .agent-context.json files",
+          "items": {
+            "type": "object",
+            "required": ["directory", "context_file"],
+            "properties": {
+              "directory": {"type": "string"},
+              "context_file": {"type": "string"},
+              "purpose": {"type": "string"}
+            }
+          }
+        }
+      }
+    }
+  }
+}
