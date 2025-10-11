@@ -68,30 +68,30 @@ fi
 # TOOL AVAILABILITY DETECTION (UNIFIED)
 # ====================================================================
 
-# Function to check if command exists
-_has() { command -v "$1" >/dev/null 2>&1; }
+# Function to check if command exists (define before use)
+_has_cmd() { command -v "$1" >/dev/null 2>&1; }
 
 # Unified tool detection (handles Debian package naming)
-export HAS_EZA=$(_has eza && echo 1 || echo 0)
-export HAS_BAT=$(_has bat || _has batcat && echo 1 || echo 0)
-export HAS_FD=$(_has fd || _has fdfind && echo 1 || echo 0)
-export HAS_RG=$(_has rg && echo 1 || echo 0)
-export HAS_ZOXIDE=$(_has zoxide && echo 1 || echo 0)
-export HAS_FZF=$(_has fzf && echo 1 || echo 0)
-export HAS_NNN=$(_has nnn && echo 1 || echo 0)
-export HAS_DELTA=$(_has delta && echo 1 || echo 0)
-export HAS_DUST=$(_has dust && echo 1 || echo 0)
-export HAS_STARSHIP=$(_has starship && echo 1 || echo 0)
-export HAS_ATUIN=$(_has atuin && echo 1 || echo 0)
-export HAS_FASTFETCH=$(_has fastfetch && echo 1 || echo 0)
+export HAS_EZA=$(_has_cmd eza && echo 1 || echo 0)
+export HAS_BAT=$(_has_cmd bat || _has_cmd batcat && echo 1 || echo 0)
+export HAS_FD=$(_has_cmd fd || _has_cmd fdfind && echo 1 || echo 0)
+export HAS_RG=$(_has_cmd rg && echo 1 || echo 0)
+export HAS_ZOXIDE=$(_has_cmd zoxide && echo 1 || echo 0)
+export HAS_FZF=$(_has_cmd fzf && echo 1 || echo 0)
+export HAS_NNN=$(_has_cmd nnn && echo 1 || echo 0)
+export HAS_DELTA=$(_has_cmd delta && echo 1 || echo 0)
+export HAS_DUST=$(_has_cmd dust && echo 1 || echo 0)
+export HAS_STARSHIP=$(_has_cmd starship && echo 1 || echo 0)
+export HAS_ATUIN=$(_has_cmd atuin && echo 1 || echo 0)
+export HAS_FASTFETCH=$(_has_cmd fastfetch && echo 1 || echo 0)
 
 # Development tools
-export HAS_DOCKER=$(_has docker && echo 1 || echo 0)
+export HAS_DOCKER=$(_has_cmd docker && echo 1 || echo 0)
 export HAS_CLAUDE_LOCAL=$([[ -d "$HOME/.claude/local" ]] && echo 1 || echo 0)
-export HAS_CARGO=$(_has cargo && echo 1 || echo 0)
-export HAS_NPM=$(_has npm && echo 1 || echo 0)
-export HAS_ANSIBLE=$(_has ansible && echo 1 || echo 0)
-export HAS_UV=$(_has uv && echo 1 || echo 0)
+export HAS_CARGO=$(_has_cmd cargo && echo 1 || echo 0)
+export HAS_NPM=$(_has_cmd npm && echo 1 || echo 0)
+export HAS_ANSIBLE=$(_has_cmd ansible && echo 1 || echo 0)
+export HAS_UV=$(_has_cmd uv && echo 1 || echo 0)
 
 # ====================================================================
 # SHELL-AGNOSTIC ENVIRONMENT
