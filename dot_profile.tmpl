@@ -1,0 +1,378 @@
+# Unified .profile for Co-lab Cluster - TEMPLATED VERSION
+# Single source of truth for PATH and environment variables
+# Works across all shells (bash, zsh, dash, sh) and SSH contexts
+# Template-time node identification ensures consistent deployment
+
+# ====================================================================
+# TEMPLATE-TIME ENVIRONMENT DETECTION
+# ====================================================================
+
+# Node identification (runtime detection)
+export NODE_ROLE="$(hostname)"
+export ARCH="$(uname -m)"
+export OS=$(uname -s)
+
+# Runtime capability detection moved to individual shells
+
+# ====================================================================
+# UNIFIED PATH CONFIGURATION
+# ====================================================================
+
+# Function to safely add to PATH (avoids duplicates)
+add_to_path() {
+    case ":${PATH}:" in
+        *:"$1":*)
+            # Already in PATH
+            ;;
+        *)
+            # Add to PATH, prepending for priority
+            export PATH="$1:$PATH"
+            ;;
+    esac
+}
+
+# Base system paths (should already be in PATH from /etc/profile)
+# /usr/local/bin:/usr/bin:/bin:/usr/games
+
+# User-specific paths (highest priority)
+[ -d "$HOME/.local/bin" ] && add_to_path "$HOME/.local/bin"
+[ -d "$HOME/bin" ] && add_to_path "$HOME/bin"
+
+# Development tools
+[ -d "$HOME/.cargo/bin" ] && add_to_path "$HOME/.cargo/bin"
+
+# Claude local installation PATH
+if [ -d "$HOME/.claude/local" ]; then
+    add_to_path "$HOME/.claude/local"
+fi
+
+# GPU-specific paths and environment (runtime detection)
+if [ -d "/usr/local/cuda/bin" ]; then
+    add_to_path "/usr/local/cuda/bin"
+    export CUDA_HOME="/usr/local/cuda"
+fi
+if [ -d "/usr/local/cuda/lib64" ]; then
+    export LD_LIBRARY_PATH="/usr/local/cuda/lib64${LD_LIBRARY_PATH:+":$LD_LIBRARY_PATH"}"
+fi
+
+# Architecture-specific tool paths (runtime detection)
+if [ "$(uname -m)" = "aarch64" ] || [ "$(uname -m)" = "arm64" ]; then
+    # ARM64-specific paths
+    [ -d "/opt/homebrew/bin" ] && add_to_path "/opt/homebrew/bin"
+fi
+
+# Snap packages
+[ -d "/snap/bin" ] && add_to_path "/snap/bin"
+
+# ====================================================================
+# TOOL AVAILABILITY DETECTION (UNIFIED)
+# ====================================================================
+
+# Function to check if command exists
+_has() { command -v "$1" >/dev/null 2>&1; }
+
+# Unified tool detection (handles Debian package naming)
+export HAS_EZA=$(_has eza && echo 1 || echo 0)
+export HAS_BAT=$(_has bat || _has batcat && echo 1 || echo 0)
+export HAS_FD=$(_has fd || _has fdfind && echo 1 || echo 0)
+export HAS_RG=$(_has rg && echo 1 || echo 0)
+export HAS_ZOXIDE=$(_has zoxide && echo 1 || echo 0)
+export HAS_FZF=$(_has fzf && echo 1 || echo 0)
+export HAS_NNN=$(_has nnn && echo 1 || echo 0)
+export HAS_DELTA=$(_has delta && echo 1 || echo 0)
+export HAS_DUST=$(_has dust && echo 1 || echo 0)
+export HAS_STARSHIP=$(_has starship && echo 1 || echo 0)
+export HAS_ATUIN=$(_has atuin && echo 1 || echo 0)
+export HAS_FASTFETCH=$(_has fastfetch && echo 1 || echo 0)
+
+# Development tools
+export HAS_DOCKER=$(_has docker && echo 1 || echo 0)
+export HAS_CLAUDE_LOCAL=$([[ -d "$HOME/.claude/local" ]] && echo 1 || echo 0)
+export HAS_CARGO=$(_has cargo && echo 1 || echo 0)
+export HAS_NPM=$(_has npm && echo 1 || echo 0)
+export HAS_ANSIBLE=$(_has ansible && echo 1 || echo 0)
+export HAS_UV=$(_has uv && echo 1 || echo 0)
+
+# ====================================================================
+# SHELL-AGNOSTIC ENVIRONMENT
+# ====================================================================
+
+# Default editor
+export EDITOR="${EDITOR:-vim}"
+export VISUAL="${VISUAL:-$EDITOR}"
+
+# Less configuration
+export LESS="-R"
+export LESSHISTFILE="-"
+
+# XDG Base Directory Specification
+export XDG_CONFIG_HOME="${XDG_CONFIG_HOME:-$HOME/.config}"
+export XDG_DATA_HOME="${XDG_DATA_HOME:-$HOME/.local/share}"
+export XDG_CACHE_HOME="${XDG_CACHE_HOME:-$HOME/.cache}"
+
+# ====================================================================
+# SHELL RC LOADING
+# ====================================================================
+
+# Load shell-specific RC files for ALL shells (interactive and non-interactive)
+# The RC files themselves now handle the interactive/non-interactive distinction
+if [ -n "$BASH_VERSION" ] && [ -f "$HOME/.bashrc" ]; then
+    # Running bash and bashrc exists - load it for aliases and additional configs
+    . "$HOME/.bashrc"
+fi
+
+# Note: ZSH automatically loads ~/.zshrc, no need to source it here
+
+# ====================================================================
+# TERMINAL COMPATIBILITY (SSH/VSCode/Cursor Fix)
+# ====================================================================
+
+# Fix TERM for SSH sessions from modern terminals (Ghostty, Kitty, VSCode, Cursor)
+# If TERM is unset, unsupported, or causes issues, default to xterm-256color
+if [ -z "$TERM" ] || [ "$TERM" = "dumb" ]; then
+    export TERM="xterm-256color"
+elif [ -z "${NONINTERACTIVE:-}" ] && ! infocmp "$TERM" >/dev/null 2>&1; then
+    # Terminal type not in terminfo database, fall back to safe value
+    # Skip infocmp check in NONINTERACTIVE mode (scp/sftp)
+    export TERM="xterm-256color"
+fi
+
+# ====================================================================
+# SSH COMPATIBILITY
+# ====================================================================
+
+# This file is sourced by login shells, which includes:
+# - SSH with login shells: ssh user@host
+# - SSH with commands when using login shell
+# - Local terminal sessions
+
+# For SSH non-interactive commands, PATH should now be preserved
+# If issues persist, automation scripts should use:
+# ssh user@host 'source ~/.profile; command'
+
+# ====================================================================
+# CLUSTER-SPECIFIC CONFIGURATIONS
+# ====================================================================
+
+# Co-lab cluster shared storage
+export CLUSTER_NAS="{{ .cluster.nas_path }}"
+
+# Template-time node-specific configurations
+{{- if eq .hostname "cooperator" }}
+# Cooperator (Gateway) specific
+export COOPERATOR_SERVICES_PATH="/opt/cooperator/services"
+{{- end }}
+
+{{- if eq .hostname "projector" }}
+# Projector (Compute) specific
+export PROJECTOR_GPU_COUNT=4
+export PROJECTOR_MEMORY="128GB"
+{{- end }}
+
+{{- if eq .hostname "director" }}
+# Director (ML) specific
+export DIRECTOR_ML_MODELS_PATH="/opt/ml/models"
+export DIRECTOR_GPU_COUNT=1
+{{- end }}
+
+# ====================================================================
+# META-MANAGEMENT FUNCTIONS
+# ====================================================================
+
+# Helper function to handle existing .meta directory
+_meta_handle_existing_dir() {
+    local mode="$1"
+    local backup_base=".meta-bkp-$(date +%Y-%m-%d)"
+    local backup_dir="$backup_base"
+    local counter=1
+
+    # Find next available numbered backup directory
+    while [ -d "$backup_dir" ]; do
+        backup_dir="${backup_base}"
+        counter=$((counter + 1))
+    done
+
+    # Determine action based on mode
+    case "$mode" in
+        prompt)
+            echo "⚠  .meta directory already exists"
+            echo ""
+            echo "Options:"
+            echo "  1) Backup and overwrite (creates ${backup_dir}/##.meta.tar.gz)"
+            echo "  2) Skip backup and overwrite (destructive)"
+            echo "  3) Cancel"
+            echo ""
+
+            # Shell-specific prompt (zsh vs bash)
+            if [ -n "$ZSH_VERSION" ]; then
+                read "choice?Choose [1-3]: "
+            else
+                read -p "Choose [1-3]: " choice
+            fi
+
+            case "$choice" in
+                1) mode="overwrite" ;;
+                2) mode="skip" ;;
+                3|*)
+                    echo "Cancelled"
+                    return 1
+                    ;;
+            esac
+            ;;
+    esac
+
+    # Execute backup or skip
+    case "$mode" in
+        overwrite)
+            echo "Creating backup: ${backup_dir}/..."
+            mkdir -p "$backup_dir" || return 1
+
+            # Find next available number for this backup
+            local num=1
+            while [ -e "${backup_dir}/${num}.meta.tar.gz" ]; do
+                num=$((num + 1))
+            done
+
+            # Create compressed backup
+            tar -czf "${backup_dir}/${num}.meta.tar.gz" .meta 2>/dev/null || {
+                echo "Error: Failed to create backup"
+                return 1
+            }
+
+            echo "✓ Backed up to: ${backup_dir}/${num}.meta.tar.gz"
+            echo "Removing existing .meta..."
+            rm -rf .meta || return 1
+            ;;
+        skip)
+            echo "Removing existing .meta without backup..."
+            rm -rf .meta || return 1
+            ;;
+    esac
+
+    return 0
+}
+
+# Meta-management initialization function
+meta() {
+    local type=""
+    local backup_mode="prompt"  # prompt, overwrite, or skip
+
+    # Parse flags
+    while [[ $# -gt 0 ]]; do
+        case $1 in
+            --cluster|-c)
+                type="cluster"
+                shift
+                ;;
+            --node|-n)
+                type="node"
+                shift
+                ;;
+            --service|-s)
+                type="service"
+                shift
+                ;;
+            --library|-l)
+                type="library"
+                shift
+                ;;
+            --interactive|-i|"")
+                type=""
+                shift
+                ;;
+            --overwrite|-f)
+                backup_mode="overwrite"
+                shift
+                ;;
+            --skip-backup)
+                backup_mode="skip"
+                shift
+                ;;
+            --vendor-only|-v)
+                # Vendor-only mode (no init, no commit)
+
+                # Check if .meta already exists and handle backup
+                if [ -d ".meta" ]; then
+                    if ! _meta_handle_existing_dir "$backup_mode"; then
+                        return 1
+                    fi
+                fi
+
+                echo "Cloning .meta template..."
+                git clone https://github.com/IMUR/.meta.git || return 1
+
+                echo "Vendoring template (removing git history)..."
+                rm -rf .meta/.git || return 1
+
+                echo "✓ Template vendored. Next steps:"
+                echo "  1. ./.meta/initialize.sh <type>"
+                echo "  2. git add .meta"
+                echo "  3. git commit -m 'Initialize .meta from vendored template'"
+                return 0
+                ;;
+            --help|-h)
+                echo "Usage: meta [OPTIONS]"
+                echo ""
+                echo "Options:"
+                echo "  -c, --cluster      Initialize for cluster repo"
+                echo "  -n, --node         Initialize for node repo"
+                echo "  -s, --service      Initialize for service repo"
+                echo "  -l, --library      Initialize for library repo"
+                echo "  -i, --interactive  Interactive prompt (default)"
+                echo "  -v, --vendor-only  Vendor only (no init/commit)"
+                echo "  -f, --overwrite    Backup existing .meta and overwrite"
+                echo "  --skip-backup      Remove existing .meta without backup"
+                echo "  -h, --help         Show this help message"
+                echo ""
+                echo "Backup format: .meta-bkp-YYYY-MM-DD/##.meta.tar.gz"
+                return 0
+                ;;
+            *)
+                echo "Unknown option: $1"
+                echo "Use --help for usage information"
+                return 1
+                ;;
+        esac
+    done
+
+    # Check if .meta already exists and handle backup
+    if [ -d ".meta" ]; then
+        if ! _meta_handle_existing_dir "$backup_mode"; then
+            return 1
+        fi
+    fi
+
+    # Clone .meta template from GitHub
+    echo "Cloning .meta template..."
+    git clone https://github.com/IMUR/.meta.git || return 1
+
+    # Remove git history to vendor into parent repo
+    echo "Vendoring template (removing git history)..."
+    rm -rf .meta/.git || return 1
+
+    # Initialize with specified type (or interactive if empty)
+    echo "Initializing .meta..."
+    if [ -z "$type" ]; then
+        ./.meta/initialize.sh || return 1
+    else
+        ./.meta/initialize.sh "$type" || return 1
+    fi
+
+    # Stage .meta directory
+    echo "Staging .meta..."
+    git add .meta || return 1
+
+    # Commit vendored and initialized .meta
+    echo "Committing..."
+    if [ -z "$type" ]; then
+        git commit -m "Initialize .meta from vendored template"
+    else
+        git commit -m "Initialize .meta from vendored template (type: ${type})"
+    fi
+
+    echo "✓ .meta initialized successfully"
+}
+
+# ====================================================================
+# END OF TEMPLATED UNIFIED PROFILE
+# ====================================================================

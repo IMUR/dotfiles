@@ -1,0 +1,174 @@
+# ============================================================================
+# Atuin Configuration - Co-lab Cluster
+# ============================================================================
+# Managed by colab-config/dotfiles
+# Applied identically across: cooperator, projector, director
+#
+# Atuin provides:
+# - Unified shell history across all 3 nodes
+# - Sync via cooperator (192.168.254.10:8811)
+# - Fuzzy search with context
+# - Privacy-aware filtering
+# ============================================================================
+
+# ----------------------------------------------------------------------------
+# Sync Configuration
+# ----------------------------------------------------------------------------
+
+## Atuin sync server running on cooperator (crtr)
+sync_address = "http://192.168.254.10:8811"
+
+## Sync every 5 minutes (balance between freshness and network load)
+sync_frequency = "5m"
+
+## Auto-sync enabled for seamless cluster-wide history
+auto_sync = true
+
+## Automatically check for updates
+update_check = false
+
+# ----------------------------------------------------------------------------
+# Search Configuration
+# ----------------------------------------------------------------------------
+
+## Search mode: fuzzy allows flexible matching
+## Options: prefix, fulltext, fuzzy, skim
+search_mode = "fuzzy"
+
+## Default filter mode: global shows all history across nodes
+## Options: global, host, session, directory, workspace
+filter_mode = "global"
+
+## Shell up-key binding uses session filter (current shell context)
+## This is more intuitive - up arrow shows current session, Ctrl+R shows global
+filter_mode_shell_up_key_binding = "session"
+
+## Enable workspace filtering (git repository context)
+workspaces = true
+
+# ----------------------------------------------------------------------------
+# UI Configuration
+# ----------------------------------------------------------------------------
+
+## Compact style for better screen real estate
+## Options: auto, full, compact
+style = "compact"
+
+## Show 15 lines in search interface (good balance for cluster work)
+inline_height = 15
+
+## Show preview of full command (helpful for long commands)
+show_preview = true
+
+## Show help text in search UI
+show_help = true
+
+## Show tabs for filter switching (useful for cluster context)
+show_tabs = true
+
+## Enter key accepts the selected command
+enter_accept = true
+
+## What to do when ESC is pressed
+## Options: return-original, return-query
+exit_mode = "return-query"
+
+## Word jump mode for Ctrl+Left/Right navigation
+## Options: emacs, subl
+word_jump_mode = "emacs"
+
+## Do not invert UI (search bar at bottom is more natural)
+invert = false
+
+## Show context lines when scrolling by pages
+scroll_context_lines = 1
+
+# ----------------------------------------------------------------------------
+# History Filtering - Privacy & Security
+# ----------------------------------------------------------------------------
+
+## Commands matching these patterns will NOT be saved to history
+## This prevents sensitive data from being synced across the cluster
+history_filter = [
+  # Secrets and credentials
+  "^secret",
+  "^pass",
+  "^password",
+  "^export.*KEY",
+  "^export.*TOKEN",
+  "^export.*SECRET",
+  "^export.*PASSWORD",
+  "^export.*API",
+
+  # Atuin internal commands (prevent recursion)
+  "^atuin login",
+  "^atuin register",
+  "^atuin key",
+
+  # SSH key operations
+  "^ssh-add.*-K",
+  "^cat.*id_rsa",
+  "^cat.*id_ed25519",
+
+  # Docker secrets
+  "^docker.*-e.*PASSWORD",
+  "^docker.*-e.*TOKEN",
+
+  # Temporary/test commands
+  "^echo.*test",
+]
+
+# ----------------------------------------------------------------------------
+# History Storage
+# ----------------------------------------------------------------------------
+
+## Timezone for displaying timestamps
+dialect = "us"
+timezone = "local"
+
+# ----------------------------------------------------------------------------
+# Cluster-Specific Features
+# ----------------------------------------------------------------------------
+
+## Enable common prefix search (useful for cluster commands)
+## Example: typing "ssh" shows all SSH commands across nodes
+common_prefix = ["ssh", "mosh", "docker", "kubectl", "ansible", "chezmoi", "git", "clush"]
+
+## Enable common subcommands (groups related commands)
+common_subcommands = ["ssh", "git", "docker", "kubectl", "cargo"]
+
+# ----------------------------------------------------------------------------
+# Performance & Advanced
+# ----------------------------------------------------------------------------
+
+## Stats configuration
+[stats]
+common_prefix = ["git", "docker", "kubectl", "ssh", "mosh", "ansible"]
+common_subcommands = ["git", "docker", "kubectl", "ssh", "cargo"]
+
+# ============================================================================
+# Key Bindings Reference
+# ============================================================================
+#
+# In search interface:
+#   Ctrl+R        - Open search (global history)
+#   Up Arrow      - Search (session history)
+#   Ctrl+N/Down   - Next result
+#   Ctrl+P/Up     - Previous result
+#   Enter         - Accept selection
+#   Tab           - Switch filter mode
+#   Ctrl+H        - Toggle help
+#   ESC           - Return to query
+#
+# ============================================================================
+# Useful Commands
+# ============================================================================
+#
+# atuin stats                    - Show history statistics
+# atuin search <query>           - Search history from CLI
+# atuin history list             - List recent history
+# atuin sync                     - Force sync now
+# atuin status                   - Check sync status
+# atuin info                     - Show configuration info
+#
+# ============================================================================

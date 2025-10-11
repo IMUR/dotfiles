@@ -1,0 +1,248 @@
+# ============================================================================
+# Co-lab Cluster tmux Configuration
+# ============================================================================
+# Managed by colab-config/dotfiles
+# Applied identically across: cooperator, projector, director
+# Node-specific customizations via Chezmoi templating
+#
+# Version: 2.0 - Improved compatibility and standards compliance
+# tmux version: 3.5a
+# ============================================================================
+
+# ----------------------------------------------------------------------------
+# Core Settings
+# ----------------------------------------------------------------------------
+
+# Enable 256 color support
+set -g default-terminal "screen-256color"
+set -ga terminal-overrides ",*256col*:Tc"
+
+# Enable mouse support
+set -g mouse on
+
+# Set scrollback buffer size
+set -g history-limit 50000
+
+# Faster command sequences (no delay)
+set -s escape-time 0
+
+# Increase repeat timeout
+set -g repeat-time 600
+
+# Start window numbering at 1 (easier to reach on keyboard)
+set -g base-index 1
+setw -g pane-base-index 1
+
+# Renumber windows when one is closed
+set -g renumber-windows on
+
+# Allow automatic renaming of windows
+set -g automatic-rename on
+set -g automatic-rename-format '#{b:pane_current_path}'
+
+# Set terminal title
+set -g set-titles on
+set -g set-titles-string '#H:#S.#I.#P #W #T'
+
+# Activity monitoring
+setw -g monitor-activity on
+set -g visual-activity off
+
+# ----------------------------------------------------------------------------
+# Key Bindings
+# ----------------------------------------------------------------------------
+
+# Use C-a as prefix (easier to reach than C-b)
+# Note: Conflicts with bash "jump to start of line", but you can press C-a C-a for that
+# Note: C-Space is ideal but often intercepted by OS/terminal emulators
+unbind C-b
+set -g prefix C-a
+bind C-a send-prefix
+
+# Reload config file
+bind r source-file ~/.tmux.conf \; display "Config reloaded!"
+
+# Split panes - keep standard bindings AND add convenient ones
+bind | split-window -h -c "#{pane_current_path}"
+bind '\' split-window -h -c "#{pane_current_path}"
+bind - split-window -v -c "#{pane_current_path}"
+bind '"' split-window -v -c "#{pane_current_path}"
+bind % split-window -h -c "#{pane_current_path}"
+
+# Create new window in current path
+bind c new-window -c "#{pane_current_path}"
+
+# Vim-style pane navigation (only add missing 'h', rest are default)
+bind h select-pane -L
+# Note: j/k/l already bound by default in tmux 3.5a
+# Note: H/J/K/L already bound for resize by default in tmux 3.5a
+
+# Mouse support enables click-to-select panes (works on all platforms)
+# Just click on a pane to switch to it - no prefix needed!
+
+# Copy mode vim bindings
+setw -g mode-keys vi
+bind [ copy-mode
+bind -T copy-mode-vi v send -X begin-selection
+bind -T copy-mode-vi y send -X copy-selection-and-cancel
+bind -T copy-mode-vi C-v send -X rectangle-toggle
+bind ] paste-buffer
+
+# ----------------------------------------------------------------------------
+# Status Bar Configuration
+# ----------------------------------------------------------------------------
+
+# Update status bar every second
+set -g status-interval 1
+
+# Position status bar at bottom (standard)
+set -g status-position bottom
+
+# Center window list
+set -g status-justify centre
+
+# Status bar length
+set -g status-left-length 50
+set -g status-right-length 100
+
+{{- if eq .chezmoi.hostname "cooperator" }}
+# ============================================================================
+# COOPERATOR (crtr) - Gateway Node
+# ============================================================================
+# Color: Blue theme (gateway, network-focused)
+# IP: 192.168.254.10
+# Role: Gateway, NFS, DNS
+
+# Status bar colors (Blue theme)
+set -g status-style 'bg=#1e3a5f,fg=#87ceeb'
+
+# Window status colors
+setw -g window-status-style 'fg=#87ceeb,bg=#1e3a5f'
+setw -g window-status-current-style 'fg=#ffffff,bg=#4682b4,bold'
+setw -g window-status-activity-style 'fg=#ffd700,bg=#1e3a5f'
+
+# Pane border colors
+set -g pane-border-style 'fg=#4682b4'
+set -g pane-active-border-style 'fg=#87ceeb'
+
+# Message colors
+set -g message-style 'fg=#ffffff,bg=#4682b4'
+
+# Status bar content
+set -g status-left '#[fg=#ffffff,bg=#4682b4,bold] 🌐 CRTR #[fg=#87ceeb,bg=#1e3a5f] #S #[fg=#4682b4]│'
+set -g status-right '#[fg=#4682b4]│#[fg=#87ceeb] %Y-%m-%d #[fg=#ffffff]%H:%M:%S #[fg=#4682b4]│#[fg=#ffffff,bg=#4682b4,bold] 192.168.254.10 '
+
+# Window status format
+setw -g window-status-format ' #I:#W#F '
+setw -g window-status-current-format ' #I:#W#F '
+
+{{- else if eq .chezmoi.hostname "projector" }}
+# ============================================================================
+# PROJECTOR (prtr) - Primary Compute Node
+# ============================================================================
+# Color: Green theme (high-performance, multi-GPU)
+# IP: 192.168.254.20
+# Role: Primary compute, 4x GPU
+
+# Status bar colors (Green theme)
+set -g status-style 'bg=#1a3d2e,fg=#90ee90'
+
+# Window status colors
+setw -g window-status-style 'fg=#90ee90,bg=#1a3d2e'
+setw -g window-status-current-style 'fg=#ffffff,bg=#2e8b57,bold'
+setw -g window-status-activity-style 'fg=#ffd700,bg=#1a3d2e'
+
+# Pane border colors
+set -g pane-border-style 'fg=#2e8b57'
+set -g pane-active-border-style 'fg=#90ee90'
+
+# Message colors
+set -g message-style 'fg=#ffffff,bg=#2e8b57'
+
+# Status bar content
+set -g status-left '#[fg=#ffffff,bg=#2e8b57,bold] 🚀 PRTR #[fg=#90ee90,bg=#1a3d2e] #S #[fg=#2e8b57]│'
+set -g status-right '#[fg=#2e8b57]│#[fg=#90ee90] %Y-%m-%d #[fg=#ffffff]%H:%M:%S #[fg=#2e8b57]│#[fg=#ffffff,bg=#2e8b57,bold] 192.168.254.20 '
+
+# Window status format
+setw -g window-status-format ' #I:#W#F '
+setw -g window-status-current-format ' #I:#W#F '
+
+{{- else if eq .chezmoi.hostname "director" }}
+# ============================================================================
+# DIRECTOR (drtr) - ML Platform Node
+# ============================================================================
+# Color: Purple theme (ML-focused, orchestration)
+# IP: 192.168.254.30
+# Role: ML platform, Single GPU
+
+# Status bar colors (Purple theme)
+set -g status-style 'bg=#2d1b3d,fg=#dda0dd'
+
+# Window status colors
+setw -g window-status-style 'fg=#dda0dd,bg=#2d1b3d'
+setw -g window-status-current-style 'fg=#ffffff,bg=#6a1b9a,bold'
+setw -g window-status-activity-style 'fg=#ffd700,bg=#2d1b3d'
+
+# Pane border colors
+set -g pane-border-style 'fg=#6a1b9a'
+set -g pane-active-border-style 'fg=#dda0dd'
+
+# Message colors
+set -g message-style 'fg=#ffffff,bg=#6a1b9a'
+
+# Status bar content
+set -g status-left '#[fg=#ffffff,bg=#6a1b9a,bold] 🎯 DRTR #[fg=#dda0dd,bg=#2d1b3d] #S #[fg=#6a1b9a]│'
+set -g status-right '#[fg=#6a1b9a]│#[fg=#dda0dd] %Y-%m-%d #[fg=#ffffff]%H:%M:%S #[fg=#6a1b9a]│#[fg=#ffffff,bg=#6a1b9a,bold] 192.168.254.30 '
+
+# Window status format
+setw -g window-status-format ' #I:#W#F '
+setw -g window-status-current-format ' #I:#W#F '
+
+{{- else }}
+# ============================================================================
+# UNKNOWN NODE - Default Theme
+# ============================================================================
+# Color: Gray theme (fallback)
+
+# Status bar colors (Gray theme)
+set -g status-style 'bg=#2e2e2e,fg=#cccccc'
+
+# Window status colors
+setw -g window-status-style 'fg=#cccccc,bg=#2e2e2e'
+setw -g window-status-current-style 'fg=#ffffff,bg=#5f5f5f,bold'
+setw -g window-status-activity-style 'fg=#ffd700,bg=#2e2e2e'
+
+# Pane border colors
+set -g pane-border-style 'fg=#5f5f5f'
+set -g pane-active-border-style 'fg=#cccccc'
+
+# Message colors
+set -g message-style 'fg=#ffffff,bg=#5f5f5f'
+
+# Status bar content
+set -g status-left '#[fg=#ffffff,bg=#5f5f5f,bold] UNKNOWN #[fg=#cccccc,bg=#2e2e2e] #S #[fg=#5f5f5f]│'
+set -g status-right '#[fg=#5f5f5f]│#[fg=#cccccc] %Y-%m-%d #[fg=#ffffff]%H:%M:%S '
+
+# Window status format
+setw -g window-status-format ' #I:#W#F '
+setw -g window-status-current-format ' #I:#W#F '
+
+{{- end }}
+
+# ----------------------------------------------------------------------------
+# Plugin Management (Optional - TPM)
+# ----------------------------------------------------------------------------
+# Uncomment to enable Tmux Plugin Manager
+# Instructions: https://github.com/tmux-plugins/tpm
+#
+# set -g @plugin 'tmux-plugins/tpm'
+# set -g @plugin 'tmux-plugins/tmux-sensible'
+# set -g @plugin 'tmux-plugins/tmux-resurrect'
+# set -g @plugin 'tmux-plugins/tmux-continuum'
+#
+# # Initialize TPM (keep this line at the very bottom)
+# run '~/.tmux/plugins/tpm/tpm'
+
+# ============================================================================
+# End of Configuration
+# ============================================================================

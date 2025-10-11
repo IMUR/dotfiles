@@ -1,0 +1,34 @@
+#!/usr/bin/env bash
+# ~/.ssh/rc - Run for ALL ssh sessions (login or not), before user's command
+# This ensures consistent environment for both human and AI agent SSH commands
+# Solves the "command not found" false negative problem once and for all
+
+# Use /bin/true to ensure clean startup
+/bin/true
+
+# Always have a safe TERM (fix for Ghostty/modern terminals)
+[ -z "${TERM:-}" ] || [ "${TERM}" = "dumb" ] && export TERM=xterm-256color
+
+# Inject ~/.local/bin early (where UV and other tools live)
+case ":$PATH:" in
+  *":$HOME/.local/bin:"*) ;;
+  *) export PATH="$HOME/.local/bin:$PATH" ;;
+esac
+
+# Also add ~/bin if it exists
+[ -d "$HOME/bin" ] && case ":$PATH:" in
+  *":$HOME/bin:"*) ;;
+  *) export PATH="$HOME/bin:$PATH" ;;
+esac
+
+# Set NONINTERACTIVE flag to prevent chatty output from .profile
+export NONINTERACTIVE=1
+
+# Source .profile to get all environment variables and functions
+# Silence output to prevent breaking things like scp/sftp
+[ -f "$HOME/.profile" ] && . "$HOME/.profile" >/dev/null 2>&1 || true
+
+# Unset NONINTERACTIVE after sourcing
+unset NONINTERACTIVE
+
+# Note: This file must be executable (mode 700) for sshd to use it

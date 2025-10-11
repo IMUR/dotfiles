@@ -1,0 +1,73 @@
+{
+  "directory_type": "user_configurations",
+  "management_tool": "chezmoi",
+  "purpose": "Cross-node user environment management via templates",
+  "safety_level": "low_risk",
+
+  "operational_constraints": {
+    "safe_operations": [
+      "template_modification",
+      "chezmoi_diff",
+      "chezmoi_apply",
+      "template_syntax_validation",
+      "node_variable_testing"
+    ],
+    "restricted_operations": [
+      "chezmoi_forget_without_backup",
+      "template_deletion",
+      "node_variable_removal"
+    ],
+    "forbidden_operations": [
+      "system_file_modification",
+      "root_user_changes"
+    ]
+  },
+
+  "validation_requirements": {
+    "before_apply": [
+      "chezmoi diff",
+      "chezmoi execute-template --dry-run"
+    ],
+    "template_syntax": [
+      "validate go template syntax",
+      "verify node variables exist",
+      "check conditional logic"
+    ],
+    "node_testing": [
+      "test on single node first",
+      "verify node-specific sections render correctly"
+    ]
+  },
+
+  "workflow_patterns": {
+    "template_modification": "edit_template -> validate_syntax -> chezmoi_diff -> test_single_node -> apply_cluster_wide",
+    "new_tool_integration": "add_detection_logic -> update_templates -> test_all_shells -> deploy",
+    "rollback": "chezmoi forget -> re-init from git"
+  },
+
+  "key_files": {
+    ".chezmoi.toml.tmpl": "Node detection and capability mapping",
+    "dot_profile.tmpl": "Universal profile with tool detection",
+    "dot_bashrc.tmpl": "Bash shell configuration",
+    "dot_zshrc.tmpl": "Zsh shell configuration",
+    ".chezmoitemplate.*": "Shared template includes"
+  },
+
+  "node_variables": {
+    "required": ["node_role", "has_gpu", "architecture"],
+    "optional": ["gpu_count", "cuda_version", "has_docker"],
+    "custom": "defined in .chezmoi.toml.tmpl"
+  },
+
+  "common_patterns": {
+    "conditional_config": "{{- if .has_gpu }} ... {{- end }}",
+    "node_specific": "{{- if eq .node_role \"gateway\" }} ... {{- end }}",
+    "shared_includes": "{{- template \"nvm-loader\" . -}}"
+  },
+
+  "escalation_triggers": [
+    "template_syntax_error",
+    "node_variable_undefined",
+    "breaking_change_detected"
+  ]
+}
