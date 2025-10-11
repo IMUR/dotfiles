@@ -108,12 +108,13 @@ Host cprt
 # GITHUB ACCESS
 # ====================================================================
 
-# GitHub access using per-node deploy keys
+# GitHub access using personal authentication keys
 Host github.com
     HostName github.com
     User git
-    IdentityFile ~/.ssh/id_ed25519_github
+    IdentityFile ~/.ssh/id_ed25519
     IdentitiesOnly yes
+    AddKeysToAgent yes
 
 # ====================================================================
 # LOCAL LOOPBACK
