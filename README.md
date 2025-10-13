@@ -4,42 +4,63 @@
 
 ## What This Is
 
-This repository defines the desired state of the cooperator node using YAML files.
+Single source of truth for cooperator node configuration using YAML state files.
 
 - **state/*.yml** = source of truth (edit these)
-- **config/** = generated or manual configs (deploy these)
-- **scripts/** = utilities (export, validate, deploy, DNS)
+- **tools/ssot** = coherent SSOT tool (discover, validate, diff, deploy)
+- **backups/** = historical snapshots
 
 ## Quick Operations
 
-### Export Current System State
+### Discover Live State
 
 ```bash
-./scripts/export-current.sh
+./tools/ssot/ssot discover
 git diff state/
 ```
 
 ### Validate State Files
 
 ```bash
-./scripts/validate.sh
+./tools/ssot/ssot validate
 ```
 
-### Deploy Configs
+### Compare State vs Live
 
 ```bash
-sudo ./scripts/deploy.sh            # Deploy all
-sudo ./scripts/deploy.sh caddy      # Deploy Caddy only
-sudo ./scripts/deploy.sh pihole     # Deploy Pi-hole only
-sudo ./scripts/deploy.sh systemd    # Deploy systemd units
-sudo ./scripts/deploy.sh docker     # Deploy docker services
+./tools/ssot/ssot diff
 ```
 
-### Update DNS
+### Deploy State to Live
 
 ```bash
-./scripts/dns-update.sh
+sudo ./tools/ssot/ssot deploy --all
+sudo ./tools/ssot/ssot deploy --service=caddy
 ```
+
+### DNS Operations
+
+```bash
+./tools/ssot/ssot dns --update
+```
+
+### Help
+
+```bash
+./tools/ssot/ssot --help
+```
+
+## SSOT Tool
+
+**Purpose**: Maintain coherence between state/ (desired) and live system (actual)
+
+| Command | Purpose | Why It Exists |
+|---------|---------|---------------|
+| `discover` | Extract live → state/ | Capture running system truth |
+| `validate` | Check state/ correctness | Catch errors before deployment |
+| `diff` | Compare state vs live | See drift, verify deployment |
+| `deploy` | Apply state/ → live | Materialize desired state |
+| `dns` | Manage DNS records | External dependency (GoDaddy) |
 
 ## State Files
 
@@ -50,29 +71,11 @@ sudo ./scripts/deploy.sh docker     # Deploy docker services
 | `state/network.yml` | Network config, DDNS, DNS overrides |
 | `state/node.yml` | Node identity and hardware |
 
-**Edit state files → Validate → Deploy**
-
-## Config Files
-
-Generated or manually maintained in `config/`:
-
-- `config/caddy/Caddyfile` - Reverse proxy
-- `config/pihole/local-dns.conf` - DNS overrides
-- `config/systemd/*.service` - Systemd units
-- `config/docker/*/docker-compose.yml` - Container definitions
+**Workflow**: Edit state/ → Validate → Deploy → Verify
 
 ## Backups
 
-Snapshots in `backups/` organized by category.
-
-## Scripts
-
-| Script | Purpose |
-|--------|---------|
-| `scripts/export-current.sh` | Pull live system state into state/ |
-| `scripts/validate.sh` | Check state file syntax |
-| `scripts/deploy.sh` | Deploy configs to system |
-| `scripts/dns-update.sh` | Update DNS records |
+Historical snapshots in `backups/` organized by category.
 
 ## Methodology
 
@@ -97,26 +100,21 @@ See `.stems/` for cluster management methodology and patterns (optional referenc
 ```
 crtr-config/
 ├── README.md          # This file
-├── state/             # Source of truth (edit these)
-│   ├── services.yml
-│   ├── domains.yml
-│   ├── network.yml
-│   └── node.yml
-├── config/            # Deployable configs
-│   ├── caddy/
-│   ├── pihole/
-│   ├── systemd/
-│   └── docker/
-├── scripts/           # Utilities
-│   ├── export-current.sh
-│   ├── validate.sh
-│   ├── deploy.sh
-│   └── dns-update.sh
+├── state/             # Source of truth
+│   ├── services.yml   # What runs
+│   ├── domains.yml    # Routing
+│   ├── network.yml    # Network
+│   └── node.yml       # Identity
+├── tools/ssot/        # SSOT tool
+│   ├── ssot           # Main CLI
+│   ├── commands/      # Subcommands
+│   └── lib/           # Shared code
 ├── backups/           # Snapshots
 ├── archives/          # Old files
-└── .stems/            # Methodology (optional)
+├── dotfiles/          # User env (submodule)
+└── .stems/            # Methodology
 ```
 
 ---
 
-**That's it.** One node, one purpose: maintain cooperator configuration state.
+**Philosophy**: One tool (`ssot`), one purpose (maintain state coherence), cooperator-specific.

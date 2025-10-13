@@ -1,0 +1,93 @@
+#!/bin/bash
+#
+# ssot - Single Source of Truth tool for cooperator node
+#
+# Purpose: Manage cooperator configuration state
+#
+# Commands:
+#   discover  - Extract live system state → state/
+#   validate  - Check state/ files correctness
+#   diff      - Compare state/ vs live system
+#   deploy    - Apply state/ → live system
+#   dns       - Manage DNS records
+#
+
+set -euo pipefail
+
+TOOL_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+COMMANDS_DIR="$TOOL_DIR/commands"
+REPO_ROOT="$(cd "$TOOL_DIR/../.." && pwd)"
+
+# Colors
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
+NC='\033[0m'
+
+show_help() {
+    cat <<EOF
+ssot - Single Source of Truth tool for cooperator node
+
+USAGE:
+    ssot <command> [options]
+
+COMMANDS:
+    discover    Extract live system state → state/ files
+                Purpose: Capture running system truth
+
+    validate    Check state/ files for correctness
+                Purpose: Catch errors before deployment
+
+    diff        Compare state/ vs live system
+                Purpose: See drift, verify deployment
+
+    deploy      Apply state/ → live system
+                Purpose: Materialize desired state
+                Options: --all, --service=<name>
+
+    dns         Manage DNS records
+                Purpose: Update external DNS (GoDaddy)
+                Options: --update, --status
+
+EXAMPLES:
+    ssot discover                # Capture live → state/
+    ssot validate                # Check state/ syntax
+    ssot diff                    # Show state vs live
+    sudo ssot deploy --all       # Deploy everything
+    sudo ssot deploy --service=caddy  # Deploy Caddy only
+    ssot dns --update            # Update DNS records
+
+PHILOSOPHY:
+    state/ = source of truth (edit these)
+    ssot = tool to maintain coherence (live ↔ state)
+
+EOF
+}
+
+main() {
+    if [[ $# -eq 0 ]] || [[ "$1" == "-h" ]] || [[ "$1" == "--help" ]]; then
+        show_help
+        exit 0
+    fi
+
+    local command="$1"
+    shift
+
+    local command_script="$COMMANDS_DIR/${command}.sh"
+
+    if [[ ! -f "$command_script" ]]; then
+        echo -e "${RED}ERROR: Unknown command '$command'${NC}"
+        echo "Run 'ssot --help' for usage"
+        exit 1
+    fi
+
+    # Export common variables for subcommands
+    export REPO_ROOT
+    export TOOL_DIR
+
+    # Execute subcommand
+    bash "$command_script" "$@"
+}
+
+main "$@"
