@@ -1,0 +1,44 @@
+# Sensitive Files (DO NOT COMMIT)
+**/secrets/
+**/*.key
+**/*.pem
+**/*.p12
+**/*.pfx
+**/id_rsa*
+**/id_ed25519*
+**/id_ecdsa*
+**/*_key
+**/*_secret*
+**/*.env
+**/credentials.*
+**/auth.*
+
+# Large Files
+**/*.tar.gz
+**/*.zip
+**/*.tgz
+**/*.sql
+**/*.db
+**/*.sqlite
+**/*.dump
+
+# Temporary Files
+**/*.tmp
+**/*.temp
+**/*.bak
+**/*.swp
+**/*~
+
+# Database Dumps
+**/*.sql.gz
+**/database-backup-*
+
+# Specific Sensitive Exports
+exports/live-configs/*.tar.gz
+exports/migration/*.tar.gz
+
+# Keep Structure
+!.gitkeep
+!README.md
+!**/.gitkeep
+!**/README.md
