@@ -1,0 +1,79 @@
+# Secrets and Credentials
+*.env
+*.key
+*.pem
+*.p12
+*.pfx
+*.crt
+*.cert
+**/secrets/
+credentials.*
+auth.*
+id_rsa*
+id_ed25519*
+id_ecdsa*
+*_key
+*_secret*
+*.token
+
+# Sensitive Pi-hole Data
+pihole/*.db
+pihole/pihole-FTL.db
+pihole/gravity.db
+pihole/dhcp.leases
+pihole/*.log
+
+# Database Files
+*.db
+*.sqlite
+*.sqlite3
+
+# Large Backup Files
+*.tar.gz
+*.tgz
+*.zip
+*.sql
+*.dump
+*.bak
+
+# Temporary Files
+*.tmp
+*.temp
+*.swp
+*~
+.#*
+
+# OS Files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Editor and IDE
+.vscode/
+.idea/
+*.code-workspace
+.project
+.settings/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+env/
+.venv
+
+# Node
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Logs
+*.log
+logs/
+
+# Generated files that should not be committed
+# (config/ is intentionally tracked - it shows generated output)

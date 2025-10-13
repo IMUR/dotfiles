@@ -1,8 +1,9 @@
 # Minimal Downtime Migration Strategy
 
 **Created**: 2025-10-13
+**Updated**: 2025-10-13 (Schema-First Revision)
 **Migration**: Debian (SD Card) → Raspberry Pi OS (USB Drive)
-**Target Downtime**: < 15 minutes
+**Target Downtime**: 30-45 minutes (realistic)
 **Current System**: Running on 955GB microSD (mmcblk0)
 **Target System**: 256GB USB 3.2.2 drive (sdb) with pre-installed Raspberry Pi OS
 
@@ -10,7 +11,16 @@
 
 ## Executive Summary
 
-This document provides a **minimal downtime migration strategy** that reduces service interruption to under 15 minutes by leveraging the schema-first crtr-config approach and careful orchestration.
+This document provides a **minimal downtime migration strategy** with **human-in-the-loop control** that reduces service interruption to 30-45 minutes by following the schema-first crtr-config approach.
+
+### Schema-First Migration Principles
+
+**This migration follows state → validate → generate → deploy workflow:**
+
+1. **State files are source of truth** (`state/*.yml`)
+2. **Configs generate from state** (not copied from backups)
+3. **Human verifies each step** (no black-box automation)
+4. **Validation before deployment** (schemas enforce correctness)
 
 ### Key Strategy Points
 
@@ -106,34 +116,46 @@ Target USB:
 
 **Goal**: Prepare USB system completely without affecting current operations
 
-#### Step 0.1: Export Current State (15 min)
+#### Step 0.1: Export and Validate State (20 min)
+
+**Schema-First Approach**: Export live system to state files, validate, generate configs
 
 ```bash
 # On SD system (still running)
 cd ~/Projects/crtr-config
 
-# Export all current configurations to state/*.yml
+# 1. Export live system configuration to state/*.yml
 ./scripts/sync/export-live-state.sh
 
-# Capture everything
-sudo tar czf /cluster-nas/backups/migration-$(date +%F)/etc-configs.tar.gz \
-  /etc/caddy \
-  /etc/pihole \
-  /etc/dnsmasq.d \
-  /etc/systemd/system/*.service \
-  /etc/exports \
-  /etc/fstab \
-  /etc/network/interfaces \
-  /etc/dhcpcd.conf
+# 2. Review state changes
+git diff state/
 
-# Backup user configs
+# 3. Validate state files against schemas
+./.meta/validation/validate.sh
+
+# If validation fails, fix state/*.yml until it passes
+
+# 4. Generate configs from validated state
+./scripts/generate/regenerate-all.sh
+
+# 5. Compare generated vs. live (should match)
+diff config/caddy/Caddyfile /etc/caddy/Caddyfile
+
+# If different, investigate and fix state/ until they match
+
+# 6. Commit validated state
+git add state/
+git commit -m "Pre-migration state snapshot (validated)"
+git push
+
+# 7. Backup user configs (not in state)
 tar czf /cluster-nas/backups/migration-$(date +%F)/home-crtr.tar.gz \
   ~/.ssh \
   ~/.config \
   ~/.local/bin \
   ~/duckdns
 
-# Document running state
+# 8. Document running state
 systemctl list-units --type=service --state=running > \
   /cluster-nas/backups/migration-$(date +%F)/running-services.txt
 
@@ -142,7 +164,7 @@ docker ps -a > /cluster-nas/backups/migration-$(date +%F)/docker-containers.txt
 ss -tlnp > /cluster-nas/backups/migration-$(date +%F)/listening-ports.txt
 ```
 
-**Deliverable**: Complete backup and state export on /cluster-nas
+**Deliverable**: Validated state files in git, generated configs ready for USB deployment
 
 #### Step 0.2: Mount and Prepare USB (30 min)
 
@@ -249,7 +271,9 @@ sudo apt install -y nfs-kernel-server
 
 **Deliverable**: USB system with all required packages installed
 
-#### Step 0.4: Pre-Deploy Configuration (30 min)
+#### Step 0.4: Deploy from State (Schema-First) (30 min)
+
+**Schema-First Deployment**: Generate and deploy configs from validated state files
 
 **Still on USB system, before switching back to SD**
 
@@ -258,38 +282,54 @@ sudo apt install -y nfs-kernel-server
 mkdir -p ~/Projects
 cd ~/Projects
 git clone /cluster-nas/repos/crtr-config
+cd crtr-config
 
-# Copy configuration files from /cluster-nas backup
-cd /cluster-nas/backups/migration-$(date +%F)/
+# Pull latest validated state
+git pull
 
-# NFS exports
-sudo cp etc-configs/etc/exports /etc/exports
+# Verify state is valid
+./.meta/validation/validate.sh
+
+# Generate all configs from state
+./scripts/generate/regenerate-all.sh
+
+# Review generated configs (HUMAN-IN-THE-LOOP)
+ls -la config/
+
+# Deploy generated configs manually (you verify each step)
+
+# 1. NFS exports (from state/network.yml → generated)
+sudo cp config/nfs/exports /etc/exports
 sudo exportfs -ra
 
-# Caddy config
-sudo cp -r etc-configs/etc/caddy/Caddyfile /etc/caddy/Caddyfile
+# 2. Caddy (from state/domains.yml → generated)
+sudo cp config/caddy/Caddyfile /etc/caddy/Caddyfile
 sudo caddy validate --config /etc/caddy/Caddyfile
 
-# DNS config
-sudo cp etc-configs/etc/dnsmasq.d/* /etc/dnsmasq.d/
-sudo cp etc-configs/etc/pihole/* /etc/pihole/
+# 3. Pi-hole DNS overrides (from state/domains.yml → generated)
+sudo cp config/pihole/local-dns.conf /etc/dnsmasq.d/02-custom-local-dns.conf
 
-# Custom systemd services
-sudo cp etc-configs/etc/systemd/system/atuin-server.service /etc/systemd/system/
-sudo cp etc-configs/etc/systemd/system/semaphore.service /etc/systemd/system/
-sudo cp etc-configs/etc/systemd/system/gotty.service /etc/systemd/system/
+# 4. Custom systemd units (from state/services.yml → generated)
+sudo cp config/systemd/atuin-server.service /etc/systemd/system/
+sudo cp config/systemd/semaphore.service /etc/systemd/system/
+sudo cp config/systemd/gotty.service /etc/systemd/system/
 
-# Install custom binaries (atuin, semaphore, gotty)
-# Copy from /cluster-nas or reinstall:
-curl -sL https://github.com/atuinsh/atuin/releases/latest/download/atuin-x86_64-unknown-linux-gnu.tar.gz | \
+# 5. User configs (not in state - copy from backup)
+cd /cluster-nas/backups/migration-$(date +%F)/
+tar xzf home-crtr.tar.gz -C /home/crtr/
+
+# 6. Install custom binaries
+# FIX: Use ARM64 architecture (not x86_64!)
+ARCH=$(uname -m)
+curl -sL https://github.com/atuinsh/atuin/releases/latest/download/atuin-${ARCH}-unknown-linux-gnu.tar.gz | \
   sudo tar xz -C /usr/local/bin
 
-# Download semaphore
+# Download semaphore (ARM64)
 sudo wget -O /usr/local/bin/semaphore \
   https://github.com/ansible-semaphore/semaphore/releases/latest/download/semaphore_linux_arm64
 sudo chmod +x /usr/local/bin/semaphore
 
-# Download gotty
+# Download gotty (ARM)
 sudo wget -O /usr/local/bin/gotty \
   https://github.com/yudai/gotty/releases/latest/download/gotty_linux_arm
 sudo chmod +x /usr/local/bin/gotty
@@ -300,7 +340,12 @@ sudo systemctl daemon-reload
 # DON'T start services yet - we'll do that after final cutover
 ```
 
-**Deliverable**: USB system fully configured but services not started
+**Key Difference**: Configs are **generated from state**, not copied from backups. This ensures:
+- State files are source of truth
+- Configs are validated before deployment
+- Human reviews each generated config before deploying
+
+**Deliverable**: USB system deployed from validated state, ready for cutover
 
 #### Step 0.5: Switch Back to SD System (5 min)
 

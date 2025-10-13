@@ -1,0 +1,124 @@
+---
+# Node Configuration Variables
+# Edit these values for your specific node
+
+# Node Information
+node:
+  name: newnode                    # Hostname
+  ip: 192.168.254.100              # Static IP
+  role: worker                     # Role: primary, worker, storage, etc.
+  arch: x86_64                     # Architecture: x86_64, arm64, armhf
+  location: rack1                  # Physical location
+  
+# Hardware Specifications
+hardware:
+  cpus: 4                          # Number of CPU cores
+  memory: 8G                       # RAM amount
+  disk: 100G                       # Primary disk size
+  gpu: false                       # Has GPU
+  gpu_type: none                   # GPU type if applicable
+
+# Network Configuration
+network:
+  interface: eth0                  # Primary network interface
+  gateway: 192.168.254.1          # Default gateway
+  dns:
+    - 8.8.8.8
+    - 8.8.4.4
+  domain: local                    # Domain name
+
+# User Configuration
+user:
+  name: trtr                       # Primary user
+  uid: 1000                        # User ID
+  shell: /bin/zsh                  # Default shell
+  groups:                          # Additional groups
+    - docker
+    - sudo
+    - audio
+    - video
+
+# SSH Configuration
+ssh:
+  port: 22                         # SSH port
+  password_auth: false             # Allow password authentication
+  root_login: false                # Allow root SSH login
+  authorized_keys:                 # Public keys to add
+    - "ssh-rsa AAAAB3NzaC1yc2..."
+
+# Service Configuration
+services:
+  docker:
+    enabled: true                  # Install Docker
+    version: latest                # Docker version
+    compose: true                  # Install Docker Compose
+    
+  monitoring:
+    enabled: true                  # Enable monitoring
+    type: node-exporter           # Monitoring type
+    port: 9100                    # Monitoring port
+    
+  logging:
+    enabled: true                  # Enable logging
+    type: rsyslog                 # Logging system
+    destination: central-log      # Log destination
+
+# Package Management
+packages:
+  update_on_setup: true            # Update packages during setup
+  upgrade_on_setup: false          # Upgrade packages during setup
+  additional:                      # Additional packages to install
+    - htop
+    - ncdu
+    - tmux
+    - git
+    - vim
+    - curl
+    - wget
+
+# Directory Structure
+directories:
+  create:                          # Directories to create
+    - /opt/services
+    - /var/log/cluster
+    - /mnt/shared
+  permissions:                     # Special permissions
+    /opt/services: "755"
+    /var/log/cluster: "775"
+
+# Environment Variables
+environment:
+  TZ: "UTC"                        # Timezone
+  LANG: "en_US.UTF-8"             # Locale
+  CLUSTER_NODE: "{{ node.name }}"  # Node identifier
+  CLUSTER_ROLE: "{{ node.role }}"  # Node role
+
+# Security Settings
+security:
+  firewall:
+    enabled: true                  # Enable firewall
+    default_policy: deny           # Default policy
+    allow_ports:                   # Ports to allow
+      - 22/tcp                     # SSH
+      - 80/tcp                     # HTTP
+      - 443/tcp                    # HTTPS
+    allow_from:                    # Allow from specific IPs
+      - 192.168.254.0/24          # Cluster network
+      
+  updates:
+    automatic: false               # Automatic security updates
+    schedule: "0 2 * * *"         # Update schedule (cron)
+
+# Backup Configuration
+backup:
+  enabled: false                   # Enable backups
+  destination: /mnt/backup         # Backup destination
+  schedule: "0 3 * * *"           # Backup schedule
+  retain_days: 30                  # Retention period
+
+# Custom Configuration
+custom:
+  # Add any custom variables here
+  # These will be available in templates as {{ custom.variable_name }}
+  project_name: "my-project"
+  environment: "production"

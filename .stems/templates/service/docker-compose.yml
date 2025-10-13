@@ -1,0 +1,149 @@
+# Service Docker Compose Template
+# Following IaC/GitOps principles for small-scale clusters
+
+version: '3.8'
+
+services:
+  # Main application service
+  app:
+    # Image configuration
+    image: ${SERVICE_IMAGE:-nginx:latest}
+    container_name: ${SERVICE_NAME:-myservice}
+    
+    # Network configuration
+    ports:
+      - "${SERVICE_PORT:-8080}:80"
+    networks:
+      - service-network
+    
+    # Environment configuration
+    environment:
+      - NODE_NAME=${HOSTNAME}
+      - NODE_IP=${NODE_IP:-localhost}
+      - SERVICE_ENV=${SERVICE_ENV:-production}
+      - LOG_LEVEL=${LOG_LEVEL:-info}
+      - TZ=${TZ:-UTC}
+    
+    # Volume mounts
+    volumes:
+      - ./config:/etc/service/config:ro
+      - service-data:/var/lib/service
+      - service-logs:/var/log/service
+    
+    # Resource limits
+    deploy:
+      resources:
+        limits:
+          cpus: '${CPU_LIMIT:-1.0}'
+          memory: ${MEMORY_LIMIT:-512M}
+        reservations:
+          cpus: '${CPU_RESERVATION:-0.5}'
+          memory: ${MEMORY_RESERVATION:-256M}
+    
+    # Health check
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost/health", "||", "exit", "1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    
+    # Restart policy
+    restart: unless-stopped
+    
+    # Logging configuration
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "${LOG_MAX_SIZE:-10m}"
+        max-file: "${LOG_MAX_FILES:-5}"
+    
+    # Dependencies
+    depends_on:
+      - cache
+      - database
+
+  # Cache service (example dependency)
+  cache:
+    image: redis:7-alpine
+    container_name: ${SERVICE_NAME:-myservice}-cache
+    networks:
+      - service-network
+    volumes:
+      - cache-data:/data
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 256M
+    restart: unless-stopped
+    command: redis-server --appendonly yes
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+
+  # Database service (example dependency)
+  database:
+    image: postgres:14-alpine
+    container_name: ${SERVICE_NAME:-myservice}-db
+    networks:
+      - service-network
+    environment:
+      - POSTGRES_DB=${DB_NAME:-servicedb}
+      - POSTGRES_USER=${DB_USER:-serviceuser}
+      - POSTGRES_PASSWORD=${DB_PASSWORD:-changeme}
+      - PGDATA=/var/lib/postgresql/data/pgdata
+    volumes:
+      - db-data:/var/lib/postgresql/data
+      - ./config/db-init:/docker-entrypoint-initdb.d:ro
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 1G
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-serviceuser}"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+# Network definition
+networks:
+  service-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.28.0.0/16
+
+# Volume definitions
+volumes:
+  service-data:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ${DATA_PATH:-./data/service}
+  
+  service-logs:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ${LOG_PATH:-./logs/service}
+  
+  cache-data:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ${CACHE_PATH:-./data/cache}
+  
+  db-data:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ${DB_PATH:-./data/database}
