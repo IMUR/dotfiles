@@ -1,350 +1,396 @@
-# START HERE: Schema-First crtr-config
+# START HERE: crtr-config
 
-**Status**: Architecture designed, ready for implementation
-**Created**: 2025-10-07
-**Vision**: State-driven, AI-assisted infrastructure for cooperator
+**Schema-first Infrastructure-as-Code** for cooperator (192.168.254.10)
+
+**Current Status:** Pre-migration (Debian SD → Raspberry Pi OS USB)
 
 ---
 
-## What We Built Today
+## Quick Orientation
 
-### 🎯 The Vision
+### What Is This Repository?
 
-Transform crtr-config into a **schema-first, state-driven** system where:
-- **State files** (`state/*.yml`) are the single source of truth
-- **Schemas** validate everything before deployment
-- **Configs auto-generate** from state (no manual editing)
-- **AI has complete context** for troubleshooting
-- **One command deploys** everything: `./deploy/deploy all`
+A **state-driven** infrastructure repository where:
+- All configuration lives in validated YAML state files
+- Configs auto-generate from state (no manual editing)
+- Changes follow: State → Validate → Generate → Deploy
 
-### 📁 What's New
+### Repository Purpose
 
-**Complete architecture in `.meta/`**:
+Manage the **cooperator node** - the gateway node of the Co-lab cluster:
+- Reverse proxy (Caddy) for all *.ism.la domains
+- DNS server (Pi-hole) for cluster
+- NFS server for shared storage
+- Docker services (n8n, Semaphore, etc.)
+
+---
+
+## Essential Reading
+
+**New users:**
+1. [README.md](README.md) - Repository overview (5 min)
+2. [docs/architecture/ARCHITECTURE.md](docs/architecture/ARCHITECTURE.md) - System design (15 min)
+3. [CLAUDE.md](CLAUDE.md) - Operational guidance (10 min)
+
+**AI assistants:**
+1. [CLAUDE.md](CLAUDE.md) - Complete operational guidance
+2. `.meta/ai/context.json` - File locations and patterns
+3. `.meta/ai/knowledge.yml` - Troubleshooting knowledge base
+
+**Complete reference:**
+- [COOPERATOR-ASPECTS.md](COOPERATOR-ASPECTS.md) - Full technical documentation
+
+---
+
+## Repository Structure
+
 ```
-.meta/
-├── ARCHITECTURE.md           # Complete technical design
-├── VISION.md                 # Transformation vision
-├── EXAMPLE-FLOW.md           # End-to-end workflow example
-├── IMPLEMENTATION-ROADMAP.md # 4-week build plan
-├── README.md                 # Metadata layer overview
-├── schemas/
-│   ├── service.schema.json   # Service validation
-│   └── domain.schema.json    # Domain validation
-└── ai/
-    ├── context.json          # AI operational context
-    └── knowledge.yml         # Troubleshooting knowledge base
+crtr-config/
+├── state/                     # 👈 EDIT THESE (source of truth)
+│   ├── services.yml           # All services
+│   ├── domains.yml            # Domain routing
+│   ├── network.yml            # Network config
+│   └── node.yml               # Node identity
+│
+├── config/                    # Generated configs (DO NOT EDIT)
+│   ├── caddy/Caddyfile
+│   ├── pihole/local-dns.conf
+│   └── systemd/*.service
+│
+├── .meta/                     # Architecture & schemas
+│   ├── schemas/               # JSON schemas for validation
+│   ├── generation/            # Jinja2 templates
+│   ├── validation/            # Validation scripts
+│   └── ai/                    # AI operational context
+│
+├── scripts/                   # Operational tools
+│   ├── generate/              # Config generators
+│   ├── sync/                  # State sync
+│   ├── dns/                   # DNS management
+│   └── ssot/                  # Infrastructure truth
+│
+├── backups/                   # Configuration snapshots
+├── docs/                      # Documentation
+└── archives/                  # Old documentation
 ```
 
-**Infrastructure integrated**:
-- ✅ SSOT scripts from colab-config
-- ✅ DNS management scripts
-- ✅ Node profiles documentation
-- ✅ Network specifications
-
-**Migration tools created**:
-- `scripts/backup-usb-to-nas.sh` - Backup/restore USB drive
-- `scripts/clone-usb-to-microsd.sh` - Clone systems
-
 ---
 
-## Current State
+## The Schema-First Workflow
 
-### ✅ Completed
-- [x] Architecture design
-- [x] Vision documentation
-- [x] JSON schemas (service, domain)
-- [x] AI knowledge base structure
-- [x] Implementation roadmap
-- [x] Infrastructure integration
+### Core Principle
 
-### 🚧 Ready to Build
-- [ ] Complete all JSON schemas
-- [ ] Migrate current config to state/*.yml
-- [ ] Build config generators
-- [ ] Build deployment automation
-- [ ] Test and validate
+**Never edit generated configs directly.** Always edit state files.
 
----
+```
+state/*.yml (edit)
+  ↓ validate
+.meta/schemas/*.json (enforce structure)
+  ↓ generate
+config/* (auto-generated)
+  ↓ deploy
+Live system (cooperator)
+```
 
-## Quick Start Guide
+### Example: Add a New Service
 
-### For Understanding the Vision
-
-**Read in this order**:
-1. **`.meta/VISION.md`** - Why we're doing this (5 min)
-2. **`.meta/ARCHITECTURE.md`** - How it works (15 min)
-3. **`.meta/EXAMPLE-FLOW.md`** - See it in action (10 min)
-
-### For Implementation
-
-**Follow this path**:
-1. **`.meta/IMPLEMENTATION-ROADMAP.md`** - 4-week plan
-2. **`.meta/schemas/*.json`** - Understand state structure
-3. **`.meta/ai/knowledge.yml`** - See captured knowledge
-
-### For Operations (After Implementation)
-
-**Daily workflow**:
+**❌ Wrong (manual editing):**
 ```bash
-vim state/services.yml          # Edit state
-./tests/test-state.sh           # Validate
-./scripts/generate/regenerate-all.sh  # Generate configs
-./deploy/deploy service myservice    # Deploy
+sudo vim /etc/caddy/Caddyfile      # Direct edit
+sudo systemctl reload caddy
+# Config drifts from state, no validation
+```
+
+**✅ Right (schema-first):**
+```bash
+# 1. Edit state
+vim state/domains.yml
+# Add: myservice.ism.la → localhost:8080
+
+# 2. Validate
+./.meta/validation/validate.sh
+
+# 3. Generate
+./scripts/generate/regenerate-all.sh
+
+# 4. Review
+git diff config/caddy/Caddyfile
+
+# 5. Deploy (manual for now)
+sudo cp config/caddy/Caddyfile /etc/caddy/
+sudo systemctl reload caddy
+
+# 6. Verify
+curl -I https://myservice.ism.la
 ```
 
 ---
 
-## Key Concepts
+## Essential Commands
 
-### State → Config → Deploy
+### Validate State Files
 
-```
-state/services.yml (edit once)
-  ↓
-Automatic validation (schemas)
-  ↓
-config/caddy/Caddyfile (auto-generated)
-config/pihole/local-dns.conf (auto-generated)
-config/systemd/*.service (auto-generated)
-  ↓
-./deploy/deploy (one command)
-  ↓
-Fully operational service
-```
-
-### No Manual Config Editing
-
-**❌ Wrong**:
 ```bash
-sudo vim /etc/caddy/Caddyfile  # Manual edit
-# Config drifts from state
+./.meta/validation/validate.sh
 ```
 
-**✅ Right**:
+Ensures all state files conform to schemas before generating configs.
+
+### Generate Configs
+
 ```bash
-vim state/domains.yml           # Edit state
-./scripts/generate/regenerate-all.sh  # Generate
-./deploy/deploy gateway         # Deploy
-# State and config always in sync
+./scripts/generate/regenerate-all.sh
 ```
 
-### AI-Assisted Everything
+Regenerates all configs from state files (Caddy, Pi-hole, systemd, docker-compose).
 
-AI can query `.meta/ai/knowledge.yml`:
-- Symptom → Root cause → Exact fix
-- Structured, not prose
-- Always includes verification steps
+### Export Live State
+
+```bash
+./scripts/sync/export-live-state.sh --dry-run all
+```
+
+Exports current system configuration to state files (useful for syncing).
+
+---
+
+## Current System
+
+### Node Profile
+
+- **Hostname:** cooperator (crtr)
+- **IP:** 192.168.254.10 (internal)
+- **External:** 47.155.237.161 via crtrcooperator.duckdns.org
+- **Hardware:** Raspberry Pi 5 (ARM64, 4-core, 16GB RAM)
+- **OS:** Debian 13 (Trixie) → migrating to Raspberry Pi OS
+- **Storage:** 931GB USB (OS) + 1.8TB NVMe (/cluster-nas)
+
+### Key Services
+
+**Gateway:**
+- Caddy - Reverse proxy (80, 443, 8443)
+- Pi-hole - DNS server (53)
+- NFS - Cluster storage (2049)
+
+**Applications:**
+- n8n - Workflow automation (n8n.ism.la)
+- Semaphore - Ansible UI (smp.ism.la)
+- Cockpit - System management (mng.ism.la)
+- GoTTY - Web terminal (ssh.ism.la)
+- Atuin - Shell history sync (8811)
+
+---
+
+## Current Phase: Pre-Migration
+
+### Migration Overview
+
+**From:** Debian 13 on microSD card
+**To:** Raspberry Pi OS on USB 3.2 drive
+**Goal:** 4x-7x performance improvement, modern OS
+
+### Migration Documentation
+
+- [docs/MINIMAL-DOWNTIME-MIGRATION.md](docs/MINIMAL-DOWNTIME-MIGRATION.md) - Detailed procedure
+- [docs/MIGRATION-CHECKLIST.md](docs/MIGRATION-CHECKLIST.md) - Execution checklist
+
+### Migration Approach
+
+**Human-in-the-loop** - Manual deployment with schema-first workflow:
+1. Validate state files
+2. Generate configs from state
+3. Manually deploy generated configs
+4. Verify each step before proceeding
+
+**NOT using:** Black-box automation
+**Using:** Schema-first workflow with manual verification
+
+---
+
+## Common Tasks
+
+### Add New Domain
+
+1. Edit `state/domains.yml`:
+   ```yaml
+   myservice.ism.la:
+     backend: localhost:8080
+     type: standard
+   ```
+
+2. Validate → Generate → Deploy:
+   ```bash
+   ./.meta/validation/validate.sh
+   ./scripts/generate/regenerate-all.sh
+   sudo cp config/caddy/Caddyfile /etc/caddy/
+   sudo systemctl reload caddy
+   ```
+
+### Modify Service Configuration
+
+1. Edit `state/services.yml`
+2. Validate → Generate → Deploy
+
+### Update DNS Records
+
+External DNS (GoDaddy):
+```bash
+./scripts/dns/godaddy-dns-manager.sh
+```
+
+DuckDNS (dynamic):
+```bash
+~/duckdns/duck.sh
+```
+
+### Check System Health
+
+```bash
+systemctl status caddy pihole-FTL nfs-kernel-server
+docker ps
+df -h /cluster-nas
+```
+
+---
+
+## Documentation Index
+
+### Architecture & Design
+- [docs/architecture/ARCHITECTURE.md](docs/architecture/ARCHITECTURE.md) - Complete technical design
+- [docs/architecture/VISION.md](docs/architecture/VISION.md) - Why schema-first
+
+### Infrastructure
+- [docs/NODE-PROFILES.md](docs/NODE-PROFILES.md) - Cluster node profiles
+- [docs/network-spec.md](docs/network-spec.md) - Network topology
+- [docs/INFRASTRUCTURE-INDEX.md](docs/INFRASTRUCTURE-INDEX.md) - Infrastructure docs index
+
+### Operations
+- [COOPERATOR-ASPECTS.md](COOPERATOR-ASPECTS.md) - Complete technical reference
+- [docs/BACKUP-STRUCTURE.md](docs/BACKUP-STRUCTURE.md) - Backup organization
+- [backups/README.md](backups/README.md) - Backup directory guide
+
+### Migration
+- [docs/MINIMAL-DOWNTIME-MIGRATION.md](docs/MINIMAL-DOWNTIME-MIGRATION.md) - Migration procedure
+- [docs/MIGRATION-CHECKLIST.md](docs/MIGRATION-CHECKLIST.md) - Execution checklist
+
+### Full Index
+- [docs/INDEX.md](docs/INDEX.md) - Complete documentation index
+
+---
+
+## State Files Reference
+
+### state/services.yml
+
+Defines all services (systemd and docker):
+- Service type (systemd, docker)
+- Ports and bindings
+- Dependencies
+- Environment variables
+- Volume mounts
+
+### state/domains.yml
+
+Domain to service routing:
+- Domain names (*.ism.la)
+- Backend targets (localhost:port or IP:port)
+- Connection type (standard, websocket, sse)
+- TLS settings
+
+### state/network.yml
+
+Network configuration:
+- Interface settings
+- Static IP configuration
+- DNS settings
+- NFS exports
+- Firewall rules
+
+### state/node.yml
+
+Node identity and hardware:
+- Hostname and IPs
+- Hardware specs
+- OS version
+- Storage configuration
+- Role in cluster
+
+---
+
+## Troubleshooting
+
+### State Validation Fails
+
+```bash
+./.meta/validation/validate.sh
+# Check error message
+# Fix state/*.yml file
+# Retry validation
+```
+
+### Generated Config Doesn't Match Live
+
+```bash
+# Export current live state
+./scripts/sync/export-live-state.sh
+
+# Compare
+git diff state/
+
+# Either:
+# - Update state to match live (if live is correct)
+# - Regenerate and deploy (if state is correct)
+```
+
+### Service Won't Start
+
+Check `.meta/ai/knowledge.yml` for troubleshooting patterns, or refer to [COOPERATOR-ASPECTS.md](COOPERATOR-ASPECTS.md).
 
 ---
 
 ## Next Steps
 
-### Immediate (This Session)
+### If You're New Here
 
-**If continuing now**:
-1. Read `.meta/IMPLEMENTATION-ROADMAP.md`
-2. Start Phase 1: Complete schemas
-3. Create `.meta/validation/validate.sh`
-4. Test schema validation
+1. Read [docs/architecture/VISION.md](docs/architecture/VISION.md) to understand why schema-first
+2. Read [docs/architecture/ARCHITECTURE.md](docs/architecture/ARCHITECTURE.md) for how it works
+3. Try the workflow: edit state → validate → generate → review
 
-**If ending session**:
-1. Review what we created (this document)
-2. Commit changes to git
-3. Handoff complete
+### If Preparing for Migration
 
-### Next Session
+1. Review [docs/MINIMAL-DOWNTIME-MIGRATION.md](docs/MINIMAL-DOWNTIME-MIGRATION.md)
+2. Address critical issues from multi-agent review (see archives/old-docs-2025-10-13/HANDOFF-2025-10-13.md)
+3. Validate state files represent current system
+4. Test config generation
 
-**To resume**:
-1. Read this document (`START-HERE.md`)
-2. Check `.meta/IMPLEMENTATION-ROADMAP.md` Phase 1
-3. Continue where we left off
+### If Maintaining System
 
----
-
-## Important Files Reference
-
-### Architecture
-- `.meta/ARCHITECTURE.md` - Complete design
-- `.meta/VISION.md` - Why and benefits
-- `.meta/IMPLEMENTATION-ROADMAP.md` - Build plan
-
-### Current Documentation
-- `COOPERATOR-ASPECTS.md` - Complete technical reference (use as source)
-- `docs/INFRASTRUCTURE-INDEX.md` - Documentation index
-- `docs/NODE-PROFILES.md` - Cluster nodes
-- `docs/network-spec.md` - Network topology
-
-### Schemas
-- `.meta/schemas/service.schema.json` - Service definitions
-- `.meta/schemas/domain.schema.json` - Domain routing
-- Need to create: `network.schema.json`, `node.schema.json`
-
-### AI Context
-- `.meta/ai/context.json` - Operational context
-- `.meta/ai/knowledge.yml` - Troubleshooting KB
-
----
-
-## Migration Status
-
-### What We're Migrating FROM
-
-Current cooperator (working system on microSD):
-- Manual config files in `/etc/`
-- Documentation in various markdown files
-- Knowledge in git history/memory
-- No validation, no generation, no automation
-
-### What We're Migrating TO
-
-Schema-first cooperator:
-- State in `state/*.yml` (validated by schemas)
-- Configs auto-generated from state
-- Knowledge in `.meta/ai/knowledge.yml` (AI-queryable)
-- Full validation, generation, automation
-
-### Migration Tools Available
-
-- USB backup: `scripts/backup-usb-to-nas.sh`
-- System clone: `scripts/clone-usb-to-microsd.sh`
-- State export: Will create `scripts/sync/export-state.sh`
-
----
-
-## Success Criteria
-
-### Phase 1 Complete When:
-```bash
-./meta/validation/validate.sh
-# Returns: All state files valid ✓
-```
-
-### Phase 4 Complete When:
-```bash
-# Fresh Raspberry Pi OS
-./deploy/deploy all
-# 20 minutes later: fully operational cooperator
-```
-
-### Final Success:
-```bash
-# Disaster strikes, cooperator is lost
-# Flash fresh RPi OS to new drive
-./deploy/deploy all
-# System is identical to before disaster
-```
-
----
-
-## Context for AI Assistants
-
-### When Loading This Repository
-
-**Essential reading**:
-1. This file (`START-HERE.md`)
-2. `.meta/ai/context.json` - Complete operational context
-3. `.meta/ai/knowledge.yml` - Troubleshooting knowledge
-
-### When Troubleshooting
-
-**Query process**:
-1. Check `.meta/ai/knowledge.yml` for symptom
-2. Find root cause and state fix
-3. Suggest state change (never direct config edit)
-4. Include verification steps
-
-### When Suggesting Changes
-
-**Always**:
-- Edit `state/*.yml` files
-- Run validation
-- Regenerate configs
-- Deploy properly
-
-**Never**:
-- Edit generated configs directly
-- Skip validation
-- Guess at file locations (check `.meta/ai/context.json`)
-
----
-
-## Quick Commands
-
-### Validate State
-```bash
-./tests/test-state.sh
-```
-
-### Generate Configs
-```bash
-./scripts/generate/regenerate-all.sh
-```
-
-### Deploy Everything
-```bash
-./deploy/deploy all
-```
-
-### Deploy One Service
-```bash
-./deploy/deploy service n8n
-```
-
-### Verify System
-```bash
-./deploy/verify/verify-all.sh
-```
-
----
-
-## Timeline
-
-**Today (2025-10-07)**: Architecture designed
-**Week 1**: Foundation + State Migration
-**Week 2**: Config Generation
-**Week 3**: Deployment Automation
-**Week 4**: Testing + Cutover
-
-**Total**: 3-4 weeks to production
-
----
-
-## This Session Summary
-
-**What we accomplished**:
-1. ✅ Designed complete schema-first architecture
-2. ✅ Created JSON schemas for validation
-3. ✅ Structured AI knowledge base
-4. ✅ Documented vision and benefits
-5. ✅ Planned 4-week implementation
-6. ✅ Integrated infrastructure docs
-7. ✅ Created migration tools
-
-**What's next**:
-- Complete remaining schemas
-- Migrate state from COOPERATOR-ASPECTS.md
-- Build generators
-- Build deployment automation
-- Test and validate
-- Cut over to new structure
+1. Always edit state files, never generated configs
+2. Always validate before generating
+3. Always review generated configs before deploying
+4. Keep backups current
 
 ---
 
 ## Getting Help
 
-### Documentation
-- `.meta/ARCHITECTURE.md` - How it works
-- `.meta/VISION.md` - Why it works
-- `.meta/EXAMPLE-FLOW.md` - See it work
-- `.meta/IMPLEMENTATION-ROADMAP.md` - Build it
+**Documentation:**
+- Full docs index: [docs/INDEX.md](docs/INDEX.md)
+- AI guidance: [CLAUDE.md](CLAUDE.md)
+- Complete reference: [COOPERATOR-ASPECTS.md](COOPERATOR-ASPECTS.md)
 
-### For Questions
-- Check `.meta/ai/context.json` for structure
-- Check `.meta/ai/knowledge.yml` for troubleshooting
-- Review `COOPERATOR-ASPECTS.md` for current state
+**For AI Assistants:**
+- Operational context: `.meta/ai/context.json`
+- Troubleshooting KB: `.meta/ai/knowledge.yml`
+- Always follow schema-first workflow
 
 ---
 
-**Ready to build the perfect cooperator?**
+## Related Repositories
 
-Start with `.meta/IMPLEMENTATION-ROADMAP.md` Phase 1.
+- **colab-config** (`~/Projects/colab-config/`) - Cluster-wide configuration
+- **crtr-config** (this repo) - Cooperator-specific configuration
+
+---
+
+**Questions?** Read [CLAUDE.md](CLAUDE.md) for complete operational guidance.
