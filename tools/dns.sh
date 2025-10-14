@@ -12,7 +12,7 @@
 
 set -euo pipefail
 
-source "$(dirname "$0")/../lib/common.sh"
+source "$(dirname "$0")/lib/common.sh"
 
 # check_state_dir
 

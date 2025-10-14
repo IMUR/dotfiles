@@ -8,7 +8,7 @@
 
 set -euo pipefail
 
-source "$(dirname "$0")/../lib/common.sh"
+source "$(dirname "$0")/lib/common.sh"
 
 STATE_DIR="$REPO_ROOT/ssot/state"
 
