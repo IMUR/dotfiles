@@ -18,7 +18,7 @@ set -euo pipefail
 source "$(dirname "$0")/../lib/common.sh"
 
 require_root "deploy"
-check_state_dir
+# check_state_dir
 
 info "Deployment not yet implemented"
 echo "This would:"

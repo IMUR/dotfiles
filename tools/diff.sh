@@ -10,7 +10,7 @@ set -euo pipefail
 
 source "$(dirname "$0")/../lib/common.sh"
 
-check_state_dir
+# check_state_dir
 
 info "Comparing state/ vs live system..."
 

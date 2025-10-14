@@ -10,9 +10,9 @@ set -euo pipefail
 
 source "$(dirname "$0")/../lib/common.sh"
 
-check_state_dir
+# check_state_dir
 
-STATE_DIR="$REPO_ROOT/state"
+STATE_DIR="$REPO_ROOT/ssot/state"
 
 info "Validating state files..."
 

@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# common.sh - Shared functions for ssot subcommands
+# common.sh - Shared functions for ssot tools
 #
 
 # Colors
@@ -35,13 +35,13 @@ fatal() {
 # Check if running as root
 require_root() {
     if [[ $EUID -ne 0 ]]; then
-        fatal "This command must be run as root. Use: sudo ssot $*"
+        fatal "This command must be run as root. Use: sudo tools/ssot $*"
     fi
 }
 
-# Validate state directory exists
+# Validate ssot/state directory exists
 check_state_dir() {
-    if [[ ! -d "$REPO_ROOT/state" ]]; then
-        fatal "state/ directory not found in $REPO_ROOT"
+    if [[ ! -d "$REPO_ROOT/ssot/state" ]]; then
+        fatal "ssot/state/ directory not found in $REPO_ROOT"
     fi
 }

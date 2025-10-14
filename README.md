@@ -4,10 +4,10 @@
 
 ## What This Is
 
-Single source of truth for cooperator node configuration using YAML state files.
+Single source of truth for cooperator node configuration.
 
-- **state/*.yml** = source of truth (edit these)
-- **tools/ssot** = coherent SSOT tool (discover, validate, diff, deploy)
+- **ssot/state/** = the source of truth (edit these YAML files)
+- **tools/** = utilities that operate on ssot/ (discover, validate, deploy)
 - **backups/** = historical snapshots
 
 ## Quick Operations
@@ -15,63 +15,72 @@ Single source of truth for cooperator node configuration using YAML state files.
 ### Discover Live State
 
 ```bash
-./tools/ssot/ssot discover
-git diff state/
+./tools/ssot discover
+git diff ssot/state/
 ```
 
 ### Validate State Files
 
 ```bash
-./tools/ssot/ssot validate
+./tools/ssot validate
 ```
 
 ### Compare State vs Live
 
 ```bash
-./tools/ssot/ssot diff
+./tools/ssot diff
 ```
 
 ### Deploy State to Live
 
 ```bash
-sudo ./tools/ssot/ssot deploy --all
-sudo ./tools/ssot/ssot deploy --service=caddy
+sudo ./tools/ssot deploy --all
+sudo ./tools/ssot deploy --service=caddy
 ```
 
 ### DNS Operations
 
 ```bash
-./tools/ssot/ssot dns --update
+./tools/ssot dns --update
 ```
 
 ### Help
 
 ```bash
-./tools/ssot/ssot --help
+./tools/ssot --help
 ```
 
-## SSOT Tool
+## Tools
 
-**Purpose**: Maintain coherence between state/ (desired) and live system (actual)
+**Purpose**: Utilities that maintain, verify, and deploy ssot/
 
-| Command | Purpose | Why It Exists |
-|---------|---------|---------------|
-| `discover` | Extract live → state/ | Capture running system truth |
-| `validate` | Check state/ correctness | Catch errors before deployment |
-| `diff` | Compare state vs live | See drift, verify deployment |
-| `deploy` | Apply state/ → live | Materialize desired state |
+| Tool | Purpose | Why It Exists |
+|------|---------|---------------|
+| `discover` | Extract live → ssot/state/ | Capture running system truth |
+| `validate` | Check ssot/state/ correctness | Catch errors before deployment |
+| `diff` | Compare ssot/state/ vs live | See drift, verify deployment |
+| `deploy` | Apply ssot/state/ → live | Materialize desired state |
 | `dns` | Manage DNS records | External dependency (GoDaddy) |
+
+Tools operate ON the ssot/, they are not part of the truth itself.
 
 ## State Files
 
 | File | Purpose |
 |------|---------|
-| `state/services.yml` | Services that run (docker, systemd) |
-| `state/domains.yml` | Domain routing (Caddy reverse proxy) |
-| `state/network.yml` | Network config, DDNS, DNS overrides |
-| `state/node.yml` | Node identity and hardware |
+| `ssot/state/services.yml` | Services that run (docker, systemd) |
+| `ssot/state/domains.yml` | Domain routing (Caddy reverse proxy) |
+| `ssot/state/network.yml` | Network config, DDNS, DNS overrides |
+| `ssot/state/node.yml` | Node identity and hardware |
 
-**Workflow**: Edit state/ → Validate → Deploy → Verify
+**Workflow**: Edit ssot/state/ → Validate → Deploy → Verify
+
+## SSOT Organization
+
+The `ssot/` directory can contain different types of truth:
+- `ssot/state/` - Current desired state (edit these)
+- Future: `ssot/discovered/` - Auto-discovered facts
+- Future: `ssot/history/` - Historical state tracking
 
 ## Backups
 
@@ -100,16 +109,21 @@ See `.stems/` for cluster management methodology and patterns (optional referenc
 ```
 crtr-config/
 ├── README.md          # This file
-├── state/             # Source of truth
-│   ├── services.yml   # What runs
-│   ├── domains.yml    # Routing
-│   ├── network.yml    # Network
-│   └── node.yml       # Identity
-├── tools/ssot/        # SSOT tool
+├── ssot/              # Single source of truth
+│   └── state/         # Current state files
+│       ├── services.yml
+│       ├── domains.yml
+│       ├── network.yml
+│       └── node.yml
+├── tools/             # Utilities (operate on ssot/)
 │   ├── ssot           # Main CLI
-│   ├── commands/      # Subcommands
-│   └── lib/           # Shared code
-├── backups/           # Snapshots
+│   ├── discover.sh    # Extract live → ssot/
+│   ├── validate.sh    # Check ssot/
+│   ├── diff.sh        # Compare ssot/ vs live
+│   ├── deploy.sh      # Apply ssot/ → live
+│   ├── dns.sh         # DNS management
+│   └── lib/           # Shared functions
+├── backups/           # Historical snapshots
 ├── archives/          # Old files
 ├── dotfiles/          # User env (submodule)
 └── .stems/            # Methodology
@@ -117,4 +131,4 @@ crtr-config/
 
 ---
 
-**Philosophy**: One tool (`ssot`), one purpose (maintain state coherence), cooperator-specific.
+**Philosophy**: `ssot/` contains truth, `tools/` operate on it. Cooperator-specific.

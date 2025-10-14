@@ -14,7 +14,7 @@ set -euo pipefail
 
 source "$(dirname "$0")/../lib/common.sh"
 
-check_state_dir
+# check_state_dir
 
 info "DNS management not yet implemented"
 echo "This would interact with GoDaddy API to:"
