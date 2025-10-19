@@ -1,0 +1,204 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://crtr-config/schemas/node.schema.json",
+  "title": "Node Configuration Schema",
+  "description": "Schema for node identity and configuration",
+  "type": "object",
+  "required": ["node"],
+  "properties": {
+    "node": {
+      "type": "object",
+      "required": ["identity", "os", "hardware", "location", "network", "services", "metadata"],
+      "properties": {
+        "identity": {
+          "type": "object",
+          "required": ["hostname", "short_name", "role", "description"],
+          "properties": {
+            "hostname": {
+              "type": "string",
+              "pattern": "^[a-z][a-z0-9-]*$",
+              "minLength": 1,
+              "maxLength": 63,
+              "description": "DNS-compliant hostname"
+            },
+            "short_name": {
+              "type": "string",
+              "pattern": "^[a-z][a-z0-9_]*$",
+              "minLength": 2,
+              "maxLength": 16,
+              "description": "Short identifier for the node"
+            },
+            "role": {
+              "type": "string",
+              "enum": ["gateway", "compute", "storage", "worker", "control"],
+              "description": "Primary role of this node"
+            },
+            "description": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256,
+              "description": "Human-readable description"
+            }
+          }
+        },
+        "os": {
+          "type": "object",
+          "required": ["distribution", "version", "codename", "architecture"],
+          "properties": {
+            "distribution": {
+              "type": "string",
+              "minLength": 1
+            },
+            "version": {
+              "type": "string",
+              "pattern": "^[0-9]+(\\.[0-9]+)*$"
+            },
+            "codename": {
+              "type": "string",
+              "minLength": 1
+            },
+            "architecture": {
+              "type": "string",
+              "enum": ["aarch64", "x86_64", "arm64", "amd64", "armv7l"]
+            }
+          }
+        },
+        "hardware": {
+          "type": "object",
+          "required": ["platform", "cpu", "memory"],
+          "properties": {
+            "platform": {
+              "type": "string",
+              "minLength": 1
+            },
+            "cpu": {
+              "type": "object",
+              "required": ["model", "cores", "architecture"],
+              "properties": {
+                "model": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "cores": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 256
+                },
+                "architecture": {
+                  "type": "string",
+                  "enum": ["arm64", "amd64", "x86_64", "armv7"]
+                }
+              }
+            },
+            "memory": {
+              "type": "object",
+              "required": ["total", "total_bytes"],
+              "properties": {
+                "total": {
+                  "type": "string",
+                  "pattern": "^[0-9]+(GB|MB|TB)$"
+                },
+                "total_bytes": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              }
+            },
+            "storage": {
+              "type": "array",
+              "minItems": 1,
+              "items": {
+                "type": "object",
+                "required": ["device", "size", "type", "interface", "mount"],
+                "properties": {
+                  "device": {
+                    "type": "string",
+                    "pattern": "^/dev/[a-z]+[0-9]*$"
+                  },
+                  "size": {
+                    "type": "string",
+                    "pattern": "^[0-9]+(\\.[0-9]+)?(GB|TB|MB)$"
+                  },
+                  "type": {
+                    "type": "string",
+                    "enum": ["nvme", "ssd", "hdd", "usb", "sd"]
+                  },
+                  "interface": {
+                    "type": "string",
+                    "enum": ["nvme", "sata", "usb3.0", "usb2.0", "pcie"]
+                  },
+                  "mount": {
+                    "type": "string",
+                    "pattern": "^/"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "location": {
+          "type": "object",
+          "required": ["timezone", "locale"],
+          "properties": {
+            "timezone": {
+              "type": "string",
+              "pattern": "^[A-Za-z_]+(/[A-Za-z_]+)*$"
+            },
+            "locale": {
+              "type": "string",
+              "pattern": "^[a-z]{2}_[A-Z]{2}\\.[A-Z0-9-]+$"
+            }
+          }
+        },
+        "network": {
+          "type": "object",
+          "required": ["internal_ip", "mac_address"],
+          "properties": {
+            "internal_ip": {
+              "type": "string",
+              "format": "ipv4",
+              "description": "Internal network IP address"
+            },
+            "external_ip": {
+              "type": "string",
+              "format": "ipv4",
+              "description": "Public IP address (if applicable)"
+            },
+            "mac_address": {
+              "type": "string",
+              "pattern": "^([0-9A-Fa-f]{2}:){5}[0-9A-Fa-f]{2}$",
+              "description": "MAC address of primary interface"
+            }
+          }
+        },
+        "services": {
+          "type": "object",
+          "properties": {
+            "gateway": { "type": "boolean" },
+            "dns": { "type": "boolean" },
+            "nfs": { "type": "boolean" },
+            "compute": { "type": "boolean" },
+            "ml": { "type": "boolean" }
+          }
+        },
+        "metadata": {
+          "type": "object",
+          "required": ["created", "last_updated", "source_of_truth"],
+          "properties": {
+            "created": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "last_updated": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "source_of_truth": {
+              "type": "boolean"
+            }
+          }
+        }
+      }
+    }
+  }
+}
