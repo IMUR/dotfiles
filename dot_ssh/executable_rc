@@ -1,14 +1,15 @@
 #!/bin/sh
-# ~/.ssh/rc - runs for ALL SSH sessions (non-login too)
-# Sets up environment via ~/.ssh/environment (requires PermitUserEnvironment yes)
+# ~/.ssh/rc - Runs for ALL SSH sessions (including non-login, non-interactive)
+# Purpose: Ensure PATH is set for remote commands like:
+#   - ssh crtr 'chezmoi update'
+#   - ansible crtr -m shell -a 'command'
+#   - git operations over SSH
+#
+# Note: This is necessary because non-interactive SSH sessions don't source
+# .profile or .zshrc, so tools in ~/.cargo/bin, ~/.local/bin won't be found
 
-# Create environment file with correct PATH
-cat > ~/.ssh/environment << 'EOF'
-PATH=/home/${USER}/.local/bin:/home/${USER}/bin:/home/${USER}/.cargo/bin:/usr/local/bin:/usr/bin:/bin:/usr/games
-EOF
-
-# Replace ${USER} with actual username
-sed -i "s/\${USER}/$USER/g" ~/.ssh/environment
-
-# Source profile for any additional setup (silent)
-[ -f "$HOME/.profile" ] && . "$HOME/.profile" >/dev/null 2>&1 || true
+# Source profile to get PATH and environment variables
+# This is the critical part that makes remote commands work
+if [ -f "$HOME/.profile" ]; then
+    . "$HOME/.profile" >/dev/null 2>&1
+fi
