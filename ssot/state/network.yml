@@ -72,9 +72,11 @@ network:
   cluster:
     subnet: 192.168.254.0/24
     nodes:
-      cooperator: 192.168.254.10
-      projector: 192.168.254.20
-      director: 192.168.254.30
+      cooperator: 192.168.254.10  # crtr - Debian 13 (ARM64) - Gateway/DNS/NFS
+      zerouter: 192.168.254.11    # zrtr - Kali Linux (ARMv7) - Router
+      projector: 192.168.254.20   # prtr - Debian 13 (x86_64) - Compute
+      director: 192.168.254.30    # drtr - Debian 13 (x86_64) - Compute
+      terminator: 192.168.254.40  # trtr - macOS - Control/Development
 
   nfs:
     exports:
