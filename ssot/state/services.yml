@@ -4,31 +4,47 @@
 # Source: COOPERATOR-ASPECTS.md
 
 services:
-  # Gateway Infrastructure
+  # Edge Services Infrastructure
   caddy:
     type: systemd
     enabled: true
+    status: running
     binary: /usr/bin/caddy
     unit_file: package
     config: /etc/caddy/Caddyfile
-    port: 80
+    ports: [80, 443]
     bind: 0.0.0.0
     restart: on-failure
+    notes: "v2.8.4, SSL certificates active"
 
   pihole:
     type: systemd
     enabled: true
+    status: running
     binary: /usr/bin/pihole-FTL
     unit_file: package
     config: /etc/pihole/
-    port: 53
+    ports: [53, 8080]
     bind: 0.0.0.0
     restart: on-failure
+    notes: "v6.2.3, native install, dns.ism.la"
 
-  # Storage
-  nfs-kernel-server:
+  cockpit:
     type: systemd
     enabled: true
+    status: running
+    binary: /usr/lib/cockpit/cockpit-ws
+    unit_file: package
+    port: 9090
+    bind: 127.0.0.1
+    restart: on-failure
+    notes: "v337-1, mng.ism.la"
+
+  # Storage (Not yet configured)
+  nfs-kernel-server:
+    type: systemd
+    enabled: false
+    status: not-installed
     binary: /usr/sbin/nfs-server
     unit_file: package
     config: /etc/exports
@@ -39,14 +55,31 @@ services:
   docker:
     type: systemd
     enabled: true
+    status: running
     binary: /usr/bin/dockerd
     unit_file: package
     restart: on-failure
+    notes: "v28.5.1"
 
-  # Custom Systemd Services
+  # Docker Compose Services (Running)
+  infisical:
+    type: docker-compose
+    enabled: true
+    status: running
+    compose_file: /home/crtr/docker/infisical/docker-compose.yml
+    services: [postgres, redis, infisical]
+    port: 8081
+    bind: 127.0.0.1
+    restart: unless-stopped
+    notes: "Secrets management, env.ism.la"
+    dependencies:
+      - docker
+
+  # Services Pending Installation
   atuin-server:
     type: systemd
-    enabled: true
+    enabled: false
+    status: not-installed
     binary: /usr/local/bin/atuin
     unit_file: /etc/systemd/system/atuin-server.service
     port: 8811
@@ -54,43 +87,39 @@ services:
     data: /home/crtr/.local/share/atuin
     user: crtr
     restart: on-failure
-    dependencies:
-      - docker
 
   semaphore:
     type: systemd
-    enabled: true
+    enabled: false
+    status: not-installed
     binary: /usr/local/bin/semaphore
     unit_file: /etc/systemd/system/semaphore.service
     port: 3000
     bind: 127.0.0.1
-    data: /cluster-nas/services/semaphore
-    user: crtr
-    restart: on-failure
-    dependencies:
-      - nfs-kernel-server
+    notes: "smp.ism.la, deployment automation"
 
   gotty:
     type: systemd
-    enabled: true
+    enabled: false
+    status: not-installed
     binary: /usr/local/bin/gotty
     unit_file: /etc/systemd/system/gotty.service
     port: 7681
     bind: 127.0.0.1
-    user: crtr
-    restart: on-failure
+    notes: "ssh.ism.la, web terminal"
 
-  # Docker Compose Services
+  # Docker Compose Services (Pending)
   n8n:
     type: docker-compose
-    enabled: true
-    compose_file: /cluster-nas/services/n8n/docker-compose.yml
+    enabled: false
+    status: pending-restore
+    compose_file: /media/crtr/crtr-data/services/n8n/docker-compose.yml
     image: n8nio/n8n:latest
     port: 5678
     bind: 127.0.0.1
-    data: /cluster-nas/services/n8n/data
-    env_file: /cluster-nas/services/n8n/.env
+    data: /media/crtr/crtr-data/services/n8n/data
+    env_file: /media/crtr/crtr-data/services/n8n/.env
     restart: unless-stopped
+    notes: "Workflow automation, data exists, ready to restore"
     dependencies:
       - docker
-      - nfs-kernel-server

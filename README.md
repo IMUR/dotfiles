@@ -1,14 +1,20 @@
 # crtr-config
 
-**Cooperator node (192.168.254.10) configuration state**
+**Cooperator node (192.168.254.10) configuration repository**
+
+## Quick Start
+
+- 📄 **[SYSTEM-STATE.md](SYSTEM-STATE.md)** - Current services, status, and progress
+- 🤖 **[CLAUDE.md](CLAUDE.md)** - Instructions for AI assistants
+- 📁 **[ssot/state/](ssot/state/)** - YAML configuration files (single source of truth)
 
 ## What This Is
 
-Single source of truth for cooperator node configuration.
-
-- **ssot/state/** = the source of truth (edit these YAML files)
-- **tools/** = utilities that operate on ssot/ (discover, validate, deploy)
-- **backups/** = historical snapshots
+Configuration management for the cooperator (edge services) node:
+- **ssot/state/** = desired state configuration (YAML)
+- **tools/** = scripts to discover, validate, and deploy configuration
+- **docs/** = installation guides and documentation
+- **archives/** = historical/outdated documents
 
 ## Quick Operations
 
@@ -95,38 +101,47 @@ See `.stems/` for cluster management methodology and patterns (optional referenc
 - **Dotfiles**: github.com/IMUR/dotfiles (chezmoi-managed user environment)
 - **Cluster**: /home/crtr/Projects/colab-config (cluster-wide config)
 
-## Node Spec
+## Node Specification
 
-- **Name**: cooperator (crtr)
-- **IP**: 192.168.254.10 (internal), 47.155.237.161 (external)
-- **Role**: Gateway (Caddy, Pi-hole, NFS server)
+- **Hostname**: cooperator (crtr)
+- **IP**: 192.168.254.10 (internal), 47.154.23.175 (external via DuckDNS)
+- **Role**: Edge services & cluster ingress (Caddy, Pi-hole, Infisical, Cockpit)
 - **Hardware**: Raspberry Pi 5, ARM64, 16GB RAM
-- **OS**: Debian 13 (Trixie)
-- **Storage**: 931GB USB (OS) + 1.8TB NVMe (/cluster-nas)
+- **OS**: Debian 13 (Trixie), kernel 6.12.47
+- **Storage**: 931GB USB (OS) + 1.8TB NVMe (/media/crtr/crtr-data)
 
 ## Repository Structure
 
 ```
 crtr-config/
-├── README.md          # This file
-├── ssot/              # Single source of truth
-│   └── state/         # Current state files
-│       ├── services.yml
-│       ├── domains.yml
-│       ├── network.yml
-│       └── node.yml
-├── tools/             # Utilities (operate on ssot/)
-│   ├── ssot           # Main CLI
-│   ├── discover.sh    # Extract live → ssot/
-│   ├── validate.sh    # Check ssot/
-│   ├── diff.sh        # Compare ssot/ vs live
-│   ├── deploy.sh      # Apply ssot/ → live
-│   ├── dns.sh         # DNS management
+├── README.md          # Project overview (you are here)
+├── SYSTEM-STATE.md    # Current system status and services
+├── CLAUDE.md          # Instructions for AI assistants
+├── ssot/              # Single Source of Truth
+│   ├── state/         # YAML configuration files
+│   │   ├── services.yml  # Service definitions
+│   │   ├── domains.yml   # Domain routing (Caddy)
+│   │   ├── network.yml   # Network configuration
+│   │   └── node.yml      # Node identity
+│   └── schemas/       # JSON schemas for validation
+├── tools/             # Management scripts
+│   ├── ssot           # Main CLI orchestrator
+│   ├── discover.sh    # Extract live config → YAML
+│   ├── validate.sh    # Check YAML syntax
+│   ├── diff.sh        # Compare desired vs actual
+│   ├── deploy.sh      # Apply YAML → system
+│   ├── dns.sh         # External DNS management
 │   └── lib/           # Shared functions
-├── backups/           # Historical snapshots
-├── archives/          # Old files
-├── dotfiles/          # User env (submodule)
-└── .stems/            # Methodology
+├── docker/            # Docker service configurations
+│   └── infisical/     # Infisical secrets management
+├── docs/              # Documentation
+│   └── install/       # Installation guides
+│       ├── docker-infisical.md
+│       ├── docker-n8n.md
+│       └── docker-pihole.md
+├── archives/          # Historical/outdated documents (14 files)
+├── backups/           # Encrypted backups
+└── .stems/            # Cluster methodology (optional)
 ```
 
 ---
