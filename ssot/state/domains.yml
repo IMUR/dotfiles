@@ -44,6 +44,13 @@ domains:
     local_ip: 192.168.254.10
     external_dns: true
 
+  - fqdn: sch.ism.la
+    service: searxng
+    backend: localhost:8083
+    type: standard
+    local_ip: 192.168.254.10
+    external_dns: true
+
   # Projector Services (Proxied)
   - fqdn: acn.ism.la
     service: archon
@@ -75,7 +82,7 @@ domains:
 
   - fqdn: cht.ism.la
     service: openwebui
-    backend: 192.168.254.20:8080
+    backend: localhost:8082
     type: standard
     local_ip: 192.168.254.10
     external_dns: true

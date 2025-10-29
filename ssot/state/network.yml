@@ -53,7 +53,7 @@ network:
     log_file: ~/duckdns/duck.log
 
   external:
-    public_ip: 47.155.237.161
+    public_ip: 447.154.23.175
     ddns_hostname: crtrcooperator.duckdns.org
     port_forwards:
       - port: 22
