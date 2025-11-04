@@ -83,6 +83,8 @@ domains:
   - fqdn: cht.ism.la
     service: openwebui
     backend: localhost:8082
-    type: standard
+    type: websocket
+    http_version: "1.1"
     local_ip: 192.168.254.10
     external_dns: true
+    notes: "Requires HTTP/1.1 for WebSocket (Socket.IO) support"

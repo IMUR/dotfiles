@@ -75,6 +75,49 @@ services:
     dependencies:
       - docker
 
+  # Docker Container Services (Running)
+  openwebui:
+    type: docker
+    enabled: true
+    status: running
+    image: ghcr.io/open-webui/open-webui:main
+    container_name: openwebui
+    port: 8082
+    bind: 127.0.0.1
+    data: /home/crtr/docker/openwebui
+    restart: unless-stopped
+    notes: "AI chat interface, cht.ism.la, requires HTTP/1.1 for WebSocket"
+    dependencies:
+      - docker
+
+  searxng:
+    type: docker
+    enabled: true
+    status: running
+    image: searxng/searxng:latest
+    container_name: searxng
+    port: 8083
+    bind: 127.0.0.1
+    data: /home/crtr/docker/searxng
+    restart: unless-stopped
+    notes: "Meta search engine, sch.ism.la, JSON format enabled"
+    dependencies:
+      - docker
+
+  jupyter:
+    type: docker
+    enabled: true
+    status: running
+    image: jupyter/minimal-notebook:latest
+    container_name: jupyter
+    port: 8888
+    bind: 0.0.0.0
+    data: /home/crtr/docker/jupyter
+    restart: unless-stopped
+    notes: "Code execution backend for OpenWebUI, token auth, JupyterLab enabled"
+    dependencies:
+      - docker
+
   # Services Pending Installation
   atuin-server:
     type: systemd

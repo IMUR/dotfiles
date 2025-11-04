@@ -219,3 +219,19 @@ The `tools/` directory contains bash scripts that operate on `ssot/`:
 - `ssot` - Main CLI that orchestrates the above
 
 All tools source `tools/lib/common.sh` for shared functions.
+
+---
+
+## Python Development
+
+**Primary Tool: uv** (`~/.local/bin/uv`)
+
+Use **uv** as the primary Python package manager and environment tool wherever applicable:
+- **Package installation**: `uv pip install <package>` instead of `pip install`
+- **Virtual environments**: `uv venv` instead of `python -m venv`
+- **Script execution**: `uvx <script>` for one-off tools
+- **Project setup**: `uv init` for new Python projects
+
+**Benefits**: Faster, more reliable, and better dependency resolution than pip/venv.
+
+**Note**: System packages installed via apt (e.g., `python3-picamera2`, `python3-libcamera`) remain available globally and should not be reinstalled with uv.

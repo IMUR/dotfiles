@@ -26,11 +26,17 @@ network:
           ip: 192.168.254.10
         - domain: mng.ism.la
           ip: 192.168.254.10
+        - domain: env.ism.la
+          ip: 192.168.254.10
         - domain: smp.ism.la
           ip: 192.168.254.10
         - domain: ssh.ism.la
           ip: 192.168.254.10
         - domain: n8n.ism.la
+          ip: 192.168.254.10
+        - domain: sch.ism.la
+          ip: 192.168.254.10
+        - domain: cht.ism.la
           ip: 192.168.254.10
         - domain: acn.ism.la
           ip: 192.168.254.10
@@ -39,8 +45,6 @@ network:
         - domain: dtb.ism.la
           ip: 192.168.254.10
         - domain: mcp.ism.la
-          ip: 192.168.254.10
-        - domain: cht.ism.la
           ip: 192.168.254.10
       config_dir: /etc/pihole/
 
