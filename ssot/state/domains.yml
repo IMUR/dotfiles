@@ -88,3 +88,12 @@ domains:
     local_ip: 192.168.254.10
     external_dns: true
     notes: "Requires HTTP/1.1 for WebSocket (Socket.IO) support"
+
+  # ESP32 Devices
+  - fqdn: btr.ism.la
+    service: barter
+    backend: 192.168.254.123:80
+    type: standard
+    local_ip: 192.168.254.10
+    external_dns: true
+    notes: "ESP32-S3 barter controller, MAC 30:ed:a0:2a:24:64"

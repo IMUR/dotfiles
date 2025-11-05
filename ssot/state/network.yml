@@ -46,6 +46,8 @@ network:
           ip: 192.168.254.10
         - domain: mcp.ism.la
           ip: 192.168.254.10
+        - domain: btr.ism.la
+          ip: 192.168.254.10
       config_dir: /etc/pihole/
 
   ddns:
