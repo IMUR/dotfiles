@@ -83,6 +83,17 @@ network:
       projector: 192.168.254.20   # prtr - Debian 13 (x86_64) - Compute
       director: 192.168.254.30    # drtr - Debian 13 (x86_64) - Compute
       terminator: 192.168.254.40  # trtr - macOS - Control/Development
+    devices:
+      barter: 192.168.254.123     # ESP32-S3 - Machine controller (Projector/Director)
+
+  dhcp_reservations:
+    gateway: 192.168.254.254
+    reservations:
+      - hostname: barter
+        mac: "30:ed:a0:2a:24:64"
+        ip: 192.168.254.123
+        type: esp32-s3
+        notes: "Static IP configured in firmware + DHCP reservation for resilience"
 
   nfs:
     exports:
