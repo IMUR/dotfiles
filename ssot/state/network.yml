@@ -86,14 +86,56 @@ network:
     devices:
       barter: 192.168.254.123     # ESP32-S3 - Machine controller (Projector/Director)
 
+  dhcp:
+    enabled: true
+    server: pihole
+    range_start: 192.168.254.50
+    range_end: 192.168.254.200
+    lease_time: 24h
+
   dhcp_reservations:
     gateway: 192.168.254.254
     reservations:
+      - hostname: cooperator
+        mac: "88:a2:9e:07:04:22"
+        ip: 192.168.254.10
+        type: raspberry-pi-5
+        notes: "Edge services node, static IP + DHCP reservation"
+      - hostname: projector
+        mac: "40:b0:76:44:7b:f3"
+        ip: 192.168.254.20
+        type: windows-pc
+        notes: "Windows host running WSL2"
+      - hostname: writer
+        mac: "40:b0:76:44:7b:f2"
+        ip: 192.168.254.21
+        type: windows-wsl
+        notes: "WSL2 instance on projector"
+      - hostname: director
+        mac: "80:fa:5b:74:f2:9e"
+        ip: 192.168.254.30
+        type: x86_64
+        notes: "Compute node"
+      - hostname: terminator
+        mac: "2c:ca:16:81:44:7b"
+        ip: 192.168.254.40
+        type: macos
+        notes: "Control/Development workstation"
+      - hostname: zerouter
+        mac: "2c:cf:67:b2:02:f2"
+        ip: 192.168.254.11
+        type: raspberry-pi
+        notes: "Kali Linux router node"
+      - hostname: raspberrypi
+        mac: "b8:27:eb:60:f5:a8"
+        ip: 192.168.254.12
+        type: raspberry-pi
+        notes: "Additional Pi node"
       - hostname: barter
         mac: "30:ed:a0:2a:24:64"
         ip: 192.168.254.123
         type: esp32-s3
-        notes: "Static IP configured in firmware + DHCP reservation for resilience"
+        notes: "Machine controller, static IP + DHCP reservation"
 
   nfs:
     exports:

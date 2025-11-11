@@ -89,6 +89,15 @@ domains:
     external_dns: true
     notes: "Requires HTTP/1.1 for WebSocket (Socket.IO) support"
 
+  # VPN Services
+  - fqdn: vpn.ism.la
+    service: headscale
+    backend: localhost:8084
+    type: standard
+    local_ip: 192.168.254.10
+    external_dns: true
+    notes: "Headscale control server for Tailscale mesh VPN"
+
   # ESP32 Devices
   - fqdn: btr.ism.la
     service: barter

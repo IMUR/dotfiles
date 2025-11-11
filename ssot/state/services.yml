@@ -151,18 +151,33 @@ services:
     bind: 127.0.0.1
     notes: "ssh.ism.la, web terminal"
 
-  # Docker Compose Services (Pending)
+  # Docker Compose Services (Running)
   n8n:
     type: docker-compose
-    enabled: false
-    status: pending-restore
-    compose_file: /media/crtr/crtr-data/services/n8n/docker-compose.yml
+    enabled: true
+    status: running
+    compose_file: /home/crtr/docker/n8n/docker-compose.yml
     image: n8nio/n8n:latest
     port: 5678
     bind: 127.0.0.1
-    data: /media/crtr/crtr-data/services/n8n/data
-    env_file: /media/crtr/crtr-data/services/n8n/.env
+    data: /home/crtr/docker/n8n/data
+    env_file: /home/crtr/docker/n8n/.env
     restart: unless-stopped
-    notes: "Workflow automation, data exists, ready to restore"
+    notes: "Workflow automation, n8n.ism.la, fresh install v1.118.2"
+    dependencies:
+      - docker
+
+  headscale:
+    type: docker-compose
+    enabled: true
+    status: running
+    compose_file: /home/crtr/docker/headscale/docker-compose.yml
+    image: headscale/headscale:v0.27.0
+    port: 8084
+    bind: 0.0.0.0
+    data: /home/crtr/docker/headscale/data
+    config: /home/crtr/docker/headscale/config
+    restart: unless-stopped
+    notes: "Self-hosted Tailscale controller, vpn.ism.la, mesh VPN for cluster"
     dependencies:
       - docker
