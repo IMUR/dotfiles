@@ -44,6 +44,14 @@ domains:
     local_ip: 192.168.254.10
     external_dns: true
 
+  - fqdn: env.ism.la
+    service: infisical
+    backend: localhost:8081
+    type: standard
+    local_ip: 192.168.254.10
+    external_dns: true
+    notes: "Infisical secrets management platform"
+
   - fqdn: sch.ism.la
     service: searxng
     backend: localhost:8083
