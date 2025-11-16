@@ -121,15 +121,16 @@ services:
   # Services Pending Installation
   atuin-server:
     type: systemd
-    enabled: false
-    status: not-installed
-    binary: /usr/local/bin/atuin
+    enabled: true
+    status: running
+    binary: /home/crtr/.atuin/bin/atuin
     unit_file: /etc/systemd/system/atuin-server.service
     port: 8811
     bind: 0.0.0.0
     data: /home/crtr/.local/share/atuin
     user: crtr
     restart: on-failure
+    notes: "Cluster-wide shell history sync server"
 
   semaphore:
     type: systemd
