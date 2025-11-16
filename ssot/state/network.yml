@@ -51,15 +51,29 @@ network:
       config_dir: /etc/pihole/
 
   ddns:
+    # Automated dynamic DNS updates via cron (*/5 * * * *)
+    # Script syncs BOTH DuckDNS and GoDaddy when public IP changes
     provider: duckdns
     domain: crtrcooperator.duckdns.org
     token: dd3810d4-6ea3-497b-832f-ec0beaf679b3
     update_script: ~/duckdns/duck.sh
     cron_schedule: "*/5 * * * *"
     log_file: ~/duckdns/duck.log
+    ip_cache: ~/duckdns/last-ip.txt
+    # GoDaddy sync configuration (credentials stored in Infisical)
+    godaddy:
+      domain: ism.la
+      record_type: A
+      record_name: "@"
+      ttl: 3600
+      credentials_source: infisical
+      infisical_path: /godaddy
+      infisical_env: prod
+      infisical_config: ~/Projects/crtr-config/.infisical.json
+      # Sync behavior: Only updates GoDaddy when IP actually changes (cached comparison)
 
   external:
-    public_ip: 447.154.23.175
+    public_ip: 47.154.24.167  # Auto-synced to DuckDNS + GoDaddy ism.la
     ddns_hostname: crtrcooperator.duckdns.org
     port_forwards:
       - port: 22
