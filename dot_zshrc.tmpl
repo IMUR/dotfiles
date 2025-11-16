@@ -214,6 +214,15 @@ if [[ $HAS_ATUIN == 1 ]]; then
 fi
 
 # ====================================================================
+# DEV TOOLS - MISE (LOAD BEFORE PROMPT)
+# ====================================================================
+
+# Initialize Mise if available (version manager for node, bun, python, etc.)
+if [[ $HAS_MISE == 1 ]]; then
+  eval "$(mise activate zsh)"
+fi
+
+# ====================================================================
 # PROMPT SYSTEM - STARSHIP (LOAD LAST)
 # ====================================================================
 
