@@ -52,9 +52,11 @@ network:
 
   ddns:
     # Automated dynamic DNS updates via cron (*/5 * * * *)
-    # Script syncs BOTH DuckDNS and GoDaddy when public IP changes
+    # Script syncs multiple DuckDNS and GoDaddy domains when public IP changes
     provider: duckdns
-    domain: crtrcooperator.duckdns.org
+    domains:
+      - crtrcooperator.duckdns.org  # Maps to ism.la
+      - colaboratory.duckdns.org    # Maps to rtr.dev
     token: dd3810d4-6ea3-497b-832f-ec0beaf679b3
     update_script: ~/duckdns/duck.sh
     cron_schedule: "*/5 * * * *"
@@ -62,7 +64,9 @@ network:
     ip_cache: ~/duckdns/last-ip.txt
     # GoDaddy sync configuration (credentials stored in Infisical)
     godaddy:
-      domain: ism.la
+      domains:
+        - ism.la     # Primary cluster domain
+        - rtr.dev    # Secondary domain
       record_type: A
       record_name: "@"
       ttl: 3600
