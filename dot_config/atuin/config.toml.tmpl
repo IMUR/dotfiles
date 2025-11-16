@@ -1,28 +1,28 @@
 # ============================================================================
-# Atuin Configuration - Co-lab Cluster
+# Atuin Configuration - Local Mode
 # ============================================================================
-# Managed by colab-config/dotfiles
-# Applied identically across: cooperator, projector, director
+# Managed by chezmoi dotfiles
 #
 # Atuin provides:
-# - Unified shell history across all 3 nodes
-# - Sync via cooperator (192.168.254.10:8811)
-# - Fuzzy search with context
-# - Privacy-aware filtering
+# - Enhanced shell history with fuzzy search
+# - Privacy-aware filtering (no secrets in history)
+# - Local-only storage (sync disabled)
+#
+# Note: Cluster-wide sync can be enabled by setting up atuin server
 # ============================================================================
 
 # ----------------------------------------------------------------------------
 # Sync Configuration
 # ----------------------------------------------------------------------------
 
-## Atuin sync server running on cooperator (crtr)
-sync_address = "http://192.168.254.10:8811"
+## SYNC DISABLED - Using local-only mode
+## To enable cluster sync: Set up atuin server on cooperator:8811, then uncomment below
+# sync_address = "http://192.168.254.10:8811"
+# sync_frequency = "5m"
+# auto_sync = true
 
-## Sync every 5 minutes (balance between freshness and network load)
-sync_frequency = "5m"
-
-## Auto-sync enabled for seamless cluster-wide history
-auto_sync = true
+## Auto-sync disabled for local-only operation
+auto_sync = false
 
 ## Automatically check for updates
 update_check = false
@@ -127,11 +127,11 @@ dialect = "us"
 timezone = "local"
 
 # ----------------------------------------------------------------------------
-# Cluster-Specific Features
+# Common Command Prefixes
 # ----------------------------------------------------------------------------
 
-## Enable common prefix search (useful for cluster commands)
-## Example: typing "ssh" shows all SSH commands across nodes
+## Enable common prefix search
+## Example: typing "ssh" shows all SSH commands from history
 common_prefix = ["ssh", "mosh", "docker", "kubectl", "ansible", "chezmoi", "git", "clush"]
 
 ## Enable common subcommands (groups related commands)
