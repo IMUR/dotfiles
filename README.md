@@ -32,6 +32,7 @@ chezmoi doctor
 | `dot_profile.tmpl` | Universal profile with tool detection |
 | `dot_bashrc.tmpl` | Bash shell configuration |
 | `dot_zshrc.tmpl` | Zsh shell configuration |
+| `dot_ssh/executable_rc` | SSH environment setup for non-interactive sessions |
 | `.chezmoitemplate.*` | Shared template includes |
 
 ## Node Variables
@@ -108,16 +109,17 @@ chezmoi forget  # Remove managed file
 
 ## Terminal Compatibility (SSH/VSCode/Cursor Fix)
 
-The dotfiles now include automatic TERM variable handling to fix issues when SSHing from modern terminals like Ghostty, Kitty, VSCode, and Cursor.
+The dotfiles include automatic TERM variable handling to fix issues when SSHing from modern terminals like Ghostty, Kitty, VSCode, and Cursor.
 
 **The Fix**:
 - `dot_profile.tmpl`: Automatically sets `TERM=xterm-256color` if TERM is unset, "dumb", or unsupported
-- `dot_ssh/config.tmpl`: Sets `SetEnv TERM=xterm-256color` for all SSH connections
 - Prevents "unsuitable terminal" errors on remote systems
 - Works for both interactive shells and VSCode/Cursor remote sessions
 
 **Why This Matters**:
 Modern terminals like Ghostty set custom TERM values (e.g., `xterm-ghostty`) that aren't in the terminfo database on remote Linux systems, causing broken terminal behavior in SSH sessions.
+
+**Note**: SSH config (`~/.ssh/config`) is managed manually, not via chezmoi, as it's static and working well across the cluster.
 
 ## Additional Documentation
 

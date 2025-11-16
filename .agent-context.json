@@ -50,6 +50,7 @@
     "dot_profile.tmpl": "Universal profile with tool detection",
     "dot_bashrc.tmpl": "Bash shell configuration",
     "dot_zshrc.tmpl": "Zsh shell configuration",
+    "dot_ssh/executable_rc": "SSH environment setup for non-interactive sessions",
     ".chezmoitemplate.*": "Shared template includes"
   },
 
