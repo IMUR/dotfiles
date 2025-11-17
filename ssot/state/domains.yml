@@ -23,12 +23,13 @@ domains:
     local_ip: 192.168.254.10
     external_dns: true
 
-  - fqdn: smp.ism.la
-    service: semaphore
+  - fqdn: git.ism.la
+    service: gitea
     backend: localhost:3000
     type: standard
     local_ip: 192.168.254.10
     external_dns: true
+    notes: "Gitea - Git repository, CI/CD, package registry"
 
   - fqdn: ssh.ism.la
     service: gotty

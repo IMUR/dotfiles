@@ -38,18 +38,43 @@ services:
     port: 9090
     bind: 127.0.0.1
     restart: on-failure
-    notes: "v337-1, mng.ism.la"
+    notes: "v337-1, mng.ism.la, with cockpit-identities v0.1.12 + cockpit-file-sharing v4.3.2"
 
-  # Storage (Not yet configured)
+  # Storage Services
+  samba:
+    type: systemd
+    enabled: true
+    status: running
+    binary: /usr/sbin/smbd
+    unit_file: package
+    config: /etc/samba/smb.conf
+    ports: [139, 445]
+    bind: 0.0.0.0
+    restart: on-failure
+    notes: "v4.22.6, fortress share at /media/crtr/fortress (955GB flash, XFS), managed via Cockpit File Sharing"
+    shares:
+      - name: fortress
+        path: /media/crtr/fortress
+        device: /dev/mmcblk0p1
+        filesystem: xfs
+        uuid: 3f865e82-2d38-4534-8e20-d61750d4fee8
+        size: 955GB
+        performance: 91MB/s
+        workgroup: COLAB
+        protocol: SMB3
+        valid_users: "@cluster"
+        subdirs: [docker, data, cache]
+
   nfs-kernel-server:
     type: systemd
     enabled: false
-    status: not-installed
+    status: installed-disabled
     binary: /usr/sbin/nfs-server
     unit_file: package
     config: /etc/exports
     port: 2049
     restart: on-failure
+    notes: "Installed as cockpit-file-sharing dependency, not used (Samba only)"
 
   # Container Runtime
   docker:

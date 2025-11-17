@@ -155,13 +155,100 @@ network:
         type: esp32-s3
         notes: "Machine controller, static IP + DHCP reservation"
 
-  nfs:
-    exports:
-      - path: /cluster-nas
-        clients: 192.168.254.0/24
-        options:
-          - rw
-          - sync
-          - no_subtree_check
-          - no_root_squash
-    config_file: /etc/exports
+  storage:
+    # Physical storage devices on cooperator
+    devices:
+      - name: sda
+        type: usb
+        model: "USB 3.2.2 FD"
+        serial: 072152591C501870
+        size: 931.5GB
+        performance: 354MB/s
+        mount: /
+        filesystem: ext4
+        purpose: boot-disk
+        notes: "Active boot drive"
+
+      - name: mmcblk0
+        type: flash
+        model: "SD FG8Y7"
+        serial: "0x70f856ea"
+        size: 955GB
+        performance: 91MB/s
+        mount: /media/crtr/fortress
+        filesystem: xfs
+        uuid: 3f865e82-2d38-4534-8e20-d61750d4fee8
+        purpose: samba-nas
+        notes: "Fortress - High-performance cluster storage (fastest for NAS)"
+
+      - name: sdb
+        type: hdd
+        model: "Hitachi HDS723020BLA642"
+        serial: MN3220F31TWV4E
+        size: 1.8TB
+        performance: 14MB/s
+        mount: unmounted
+        purpose: raid-backup
+        notes: "Designated for RAID1 with sdd (slower drive)"
+
+      - name: sdc
+        type: hdd
+        model: "SSK Storage"
+        serial: DD564198838B8
+        size: 1.8TB
+        performance: 35MB/s
+        mount: /media/crtr/crtr-data1
+        filesystem: xfs
+        purpose: archive
+        notes: "Former NAS drive, now available for archive/spare"
+
+      - name: sdd
+        type: hdd
+        model: "HGST HUS724020ALE640"
+        serial: PK1134P6KXAWWW
+        size: 1.8TB
+        performance: 35MB/s
+        mount: unmounted
+        purpose: raid-backup
+        notes: "Designated for RAID1 with sdb"
+
+  samba:
+    # Fortress - High-performance cluster storage (955GB flash)
+    server_role: standalone
+    workgroup: COLAB
+    protocol: SMB3  # SMB3 for encryption, performance, and security
+    config_file: /etc/samba/smb.conf
+    shares:
+      - name: fortress
+        path: /media/crtr/fortress
+        device: /dev/mmcblk0p1
+        filesystem: xfs
+        size: 955GB
+        performance: 91MB/s sequential read
+        uuid: 3f865e82-2d38-4534-8e20-d61750d4fee8
+        comment: "Fortress - High-Performance Cluster Storage (Docker, Data, Cache)"
+        access: read-write
+        valid_users: "@cluster"
+        create_mask: "0775"
+        directory_mask: "0775"
+        force_group: cluster
+        vfs_objects:
+          - acl_xattr
+        subdirs:
+          - docker   # Container volumes and images
+          - data     # Application data
+          - cache    # Temporary/cache data
+    credentials:
+      source: infisical
+      path: /samba
+      secret_name: COLAB_NAS_SAMBA_PASSWORD
+      env: prod
+    network:
+      hosts_allow:
+        - 192.168.254.0/24  # Local network
+        - 100.64.0.0/16     # Headscale mesh
+        - 127.0.0.1         # Localhost
+    mount_points:
+      linux: "//cooperator.colab/fortress → /mnt/fortress"
+      windows: "\\\\cooperator.colab\\fortress → Z:\\"
+      macos: "smb://cooperator.colab/fortress → /Volumes/fortress"

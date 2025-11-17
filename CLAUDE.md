@@ -149,6 +149,7 @@ Some domains proxy to projector services (e.g., `mcp.ism.la` → `192.168.254.20
 - `backups/` - Historical snapshots
 - `archives/` - Old documentation
 - `docker-*.md` - Service-specific installation guides
+- `.infisical.json` - Infisical project configuration (git-tracked, no secrets)
 
 ### Related Repositories
 - **Dotfiles**: `github.com/IMUR/dotfiles` - Chezmoi-managed user environment (separate from node config)
@@ -198,12 +199,12 @@ When restoring services, check these locations for existing configs and data.
 ## Node Specification
 
 - **Hostname**: cooperator (short: crtr)
-- **Role**: Edge services & ingress node - Caddy reverse proxy, Pi-hole DNS, NFS server
-- **IPs**: 192.168.254.10 (internal), 47.155.237.161 (external)
+- **Role**: Edge services & ingress node - Caddy reverse proxy, Pi-hole DNS, NFS server, secrets management
+- **IPs**: 192.168.254.10 (internal), 47.154.24.167 (external, auto-synced)
 - **Hardware**: Raspberry Pi 5, ARM64, 16GB RAM
 - **OS**: Debian 13 (Trixie)
 - **Storage**: 931GB USB (OS), 1.8TB NVMe (/cluster-nas)
-- **Domain**: ism.la (all subdomains route through this node)
+- **Domains**: ism.la, rtr.dev (auto-synced via DuckDNS + GoDaddy)
 
 ---
 
@@ -219,6 +220,107 @@ The `tools/` directory contains bash scripts that operate on `ssot/`:
 - `ssot` - Main CLI that orchestrates the above
 
 All tools source `tools/lib/common.sh` for shared functions.
+
+---
+
+## Secrets Management with Infisical
+
+**Infisical** is used for secure credential storage and injection, eliminating hardcoded secrets in scripts and configs.
+
+### Configuration
+
+- **Infisical CLI**: `/usr/bin/infisical` (v0.43.24+)
+- **Organization**: Co-lab
+- **Project**: keys
+- **Config file**: `.infisical.json` (in project root, git-tracked)
+- **Vault**: Auto (system keyring)
+
+### Folder Structure
+
+Secrets are organized in folders within the "keys" project:
+- `/godaddy` - GoDaddy API credentials (GODADDY_API_KEY, GODADDY_API_SECRET)
+- (Additional folders as needed for different services)
+
+### Usage Patterns
+
+**Interactive use** (fetch individual secrets):
+```bash
+# Get a specific secret
+infisical secrets get GODADDY_API_KEY --env=prod --path=/godaddy
+
+# List secrets in a folder (names only)
+infisical export --env=prod --path=/godaddy --format=dotenv | cut -d= -f1
+```
+
+**Script execution** (inject secrets as environment variables):
+```bash
+# Run command with secrets injected
+infisical run --env=prod --path=/godaddy -- bash -c 'curl ... -H "Auth: ${GODADDY_API_KEY}:${GODADDY_API_SECRET}"'
+
+# From scripts in different directories
+(cd ~/Projects/crtr-config && infisical run --env=prod --path=/godaddy -- your-command)
+```
+
+**From cron jobs**:
+```bash
+# Cron runs as user, has access to Infisical vault
+# Must cd to project directory where .infisical.json lives
+(cd ~/Projects/crtr-config && infisical run --env=prod --path=/godaddy -- your-script.sh)
+```
+
+### Benefits
+
+- **No exposed credentials**: Secrets never appear in scripts, logs, or git history
+- **Centralized management**: Update secrets in one place (Infisical), all scripts use new values
+- **Audit trail**: Infisical tracks secret access and changes
+- **Production-ready**: Works in cron, systemd services, and interactive shells
+
+### Real-world Example: DNS Automation
+
+The `~/duckdns/duck.sh` script uses Infisical to securely update GoDaddy DNS:
+```bash
+# Credentials injected at runtime, never stored in script
+(cd "$INFISICAL_CONFIG_DIR" && infisical run --env=prod --path=/godaddy -- bash -c "
+    curl -X PUT 'https://api.godaddy.com/v1/domains/${DOMAIN}/records/A/@' \
+    -H 'Authorization: sso-key \${GODADDY_API_KEY}:\${GODADDY_API_SECRET}' \
+    -d '[{\"data\": \"${IP}\"}]'
+")
+```
+
+---
+
+## DNS Automation
+
+### Multi-Domain DDNS Sync
+
+The cooperator node runs automated DNS updates via `~/duckdns/duck.sh` (cron: */5 * * * *):
+
+**DuckDNS domains** (updated every run):
+- `crtrcooperator.duckdns.org` → ism.la
+- `colaboratory.duckdns.org` → rtr.dev
+
+**GoDaddy domains** (updated only on IP change):
+- `ism.la` (A @ record)
+- `rtr.dev` (A @ record)
+
+**How it works:**
+1. Updates both DuckDNS domains in one API call
+2. Fetches current public IP
+3. Compares to cached IP (`~/duckdns/last-ip.txt`)
+4. If changed: Updates all GoDaddy domains via Infisical-injected credentials
+5. Caches new IP to prevent unnecessary API calls
+
+**Benefits:**
+- Automatic recovery from router reboots or ISP IP changes (within 5 minutes)
+- Efficient: Only calls GoDaddy API when IP actually changes
+- Secure: GoDaddy API keys stored in Infisical, never exposed
+- Multi-domain: Single script manages all DNS providers
+
+**Files:**
+- Script: `~/duckdns/duck.sh`
+- Log: `~/duckdns/duck.log`
+- IP cache: `~/duckdns/last-ip.txt`
+- Config: `ssot/state/network.yml` (documents domains and behavior)
 
 ---
 
