@@ -65,6 +65,17 @@ fi
 [ -d "/snap/bin" ] && add_to_path "/snap/bin"
 
 # ====================================================================
+# MISE ACTIVATION (BEFORE TOOL DETECTION)
+# ====================================================================
+
+# Activate mise early so mise-managed tools are in PATH for detection
+# Detect mise binary first (might be in ~/.local/bin)
+if command -v mise >/dev/null 2>&1; then
+    # Mise exists, activate it to inject tool paths
+    eval "$(mise activate bash --shims)" 2>/dev/null || true
+fi
+
+# ====================================================================
 # TOOL AVAILABILITY DETECTION (UNIFIED)
 # ====================================================================
 
@@ -93,6 +104,9 @@ export HAS_NPM=$(_has_cmd npm && echo 1 || echo 0)
 export HAS_ANSIBLE=$(_has_cmd ansible && echo 1 || echo 0)
 export HAS_UV=$(_has_cmd uv && echo 1 || echo 0)
 export HAS_MISE=$(_has_cmd mise && echo 1 || echo 0)
+
+# Note: UV and other mise-managed tools should now be detected correctly
+# since mise was activated before tool detection
 
 # ====================================================================
 # SHELL-AGNOSTIC ENVIRONMENT

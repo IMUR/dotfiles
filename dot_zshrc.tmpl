@@ -11,7 +11,8 @@ _shell_start_time=$EPOCHREALTIME
 # This ensures we get all environment variables, PATH, and tool detection
 # before any interactive shell setup begins
 
-emulate sh -c 'source ~/.profile'
+# Source .profile directly (mise activation needs to persist to parent shell)
+source ~/.profile
 
 # Now we have: NODE_TYPE, NODE_ROLE, HAS_*, PATH, NVM_DIR, etc.
 # from our templated .profile foundation
@@ -164,9 +165,10 @@ zstyle ':completion:*:descriptions' format '[%d]'
 
 # Zoxide (smart cd) initialization
 if [[ $HAS_ZOXIDE == 1 ]]; then
-  eval "$(zoxide init zsh)"
-  alias cd='z'
-  alias cdi='zi'  # Interactive mode
+  if eval "$(zoxide init zsh 2>/dev/null)"; then
+    alias cd='z'
+    alias cdi='zi'  # Interactive mode
+  fi
 fi
 
 # FZF integration
@@ -217,7 +219,8 @@ fi
 # DEV TOOLS - MISE (LOAD BEFORE PROMPT)
 # ====================================================================
 
-# Initialize Mise if available (version manager for node, bun, python, etc.)
+# Initialize Mise for full shell integration (completion, hooks)
+# Note: .profile already activated mise with --shims for PATH
 if [[ $HAS_MISE == 1 ]]; then
   eval "$(mise activate zsh)"
 fi
@@ -314,3 +317,10 @@ unfunction _has
 #     # Attach to existing session or create new one
 #     tmux attach-session -t ssh_tmux || tmux new-session -s ssh_tmux
 # fi
+# Bun Completions & Path
+[ -s "/home/crtr/.bun/_bun" ] && source "/home/crtr/.bun/_bun"
+export PATH="/home/crtr/.cache/.bun/bin:$PATH"
+
+# Modern Shell Initializations (Mise Managed)
+eval "$(starship init zsh)"
+eval "$(zoxide init zsh)"

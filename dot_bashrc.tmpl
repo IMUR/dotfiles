@@ -199,7 +199,8 @@ if [[ $HAS_ATUIN == 1 ]] && command -v atuin >/dev/null 2>&1; then
     eval "$(atuin init bash)"
 fi
 
-# Mise (dev tool version manager) integration
+# Mise (dev tool version manager) - full shell integration
+# Note: .profile already activated mise with --shims for PATH
 if [[ $HAS_MISE == 1 ]] && command -v mise >/dev/null 2>&1; then
     eval "$(mise activate bash)"
 fi
