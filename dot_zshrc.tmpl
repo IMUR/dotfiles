@@ -160,18 +160,12 @@ zstyle ':completion:*' group-name ''
 zstyle ':completion:*:descriptions' format '[%d]'
 
 # ====================================================================
-# ZSH PLUGINS (LOAD AFTER COMPINIT, ORDER MATTERS)
+# FZF-TAB (LOAD IMMEDIATELY AFTER COMPINIT)
 # ====================================================================
-# Managed by chezmoi external: ~/.local/share/zsh/plugins/
-# Order: autosuggestions → fzf-tab → syntax-highlighting (last!)
+# fzf-tab must load after compinit but before fzf --zsh
 
 _zsh_plugins="${HOME}/.local/share/zsh/plugins"
 
-# 1. Autosuggestions - ghost text from history
-[[ -f "${_zsh_plugins}/zsh-autosuggestions/zsh-autosuggestions.zsh" ]] && \
-  source "${_zsh_plugins}/zsh-autosuggestions/zsh-autosuggestions.zsh"
-
-# 2. fzf-tab - replace completion menu with fzf (requires fzf)
 if [[ $HAS_FZF == 1 ]] && [[ -f "${_zsh_plugins}/fzf-tab/fzf-tab.plugin.zsh" ]]; then
   source "${_zsh_plugins}/fzf-tab/fzf-tab.plugin.zsh"
   # fzf-tab configuration
@@ -179,25 +173,12 @@ if [[ $HAS_FZF == 1 ]] && [[ -f "${_zsh_plugins}/fzf-tab/fzf-tab.plugin.zsh" ]];
   zstyle ':fzf-tab:*' fzf-flags --height=40% --layout=reverse --border
 fi
 
-# 3. Syntax highlighting - MUST BE LAST (needs to see final ZLE state)
-[[ -f "${_zsh_plugins}/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh" ]] && \
-  source "${_zsh_plugins}/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh"
-
-unset _zsh_plugins
-
 # ====================================================================
-# MODERN INTEGRATIONS (LOAD AFTER PLUGINS)
+# ZLE WIDGET PROVIDERS (ORDER: fzf → atuin → zoxide)
 # ====================================================================
+# These create ZLE widgets/keybindings. Atuin should win Ctrl-R over fzf.
 
-# Zoxide (smart cd) initialization
-if [[ $HAS_ZOXIDE == 1 ]]; then
-  if eval "$(zoxide init zsh 2>/dev/null)"; then
-    alias cd='z'
-    alias cdi='zi'  # Interactive mode
-  fi
-fi
-
-# FZF integration
+# FZF integration (keybindings + completion)
 if [[ $HAS_FZF == 1 ]]; then
   # Use fd for fzf if available (with unified detection)
   if [[ $HAS_FD == 1 ]]; then
@@ -223,8 +204,21 @@ if [[ $HAS_FZF == 1 ]]; then
     --color=prompt:#87ff00
   '
   
-  # Load fzf key bindings and completion (after compinit)
+  # Load fzf key bindings and completion
   source <(fzf --zsh) 2>/dev/null || true
+fi
+
+# Atuin (history replacement) - loads AFTER fzf to win Ctrl-R binding
+if [[ $HAS_ATUIN == 1 ]]; then
+  eval "$(atuin init zsh)"
+fi
+
+# Zoxide (smart cd)
+if [[ $HAS_ZOXIDE == 1 ]]; then
+  if eval "$(zoxide init zsh 2>/dev/null)"; then
+    alias cd='z'
+    alias cdi='zi'  # Interactive mode
+  fi
 fi
 
 # Claude local installation PATH
@@ -233,16 +227,7 @@ if [ -d "$HOME/.claude/local" ]; then
 fi
 
 # ====================================================================
-# HISTORY SYSTEM - ATUIN (LOAD BEFORE PROMPT)
-# ====================================================================
-
-# Initialize Atuin if available (history replacement)
-if [[ $HAS_ATUIN == 1 ]]; then
-  eval "$(atuin init zsh)"
-fi
-
-# ====================================================================
-# DEV TOOLS - MISE (LOAD BEFORE PROMPT)
+# DEV TOOLS - MISE
 # ====================================================================
 
 # Initialize Mise for full shell integration (completion, hooks)
@@ -252,10 +237,9 @@ if [[ $HAS_MISE == 1 ]]; then
 fi
 
 # ====================================================================
-# PROMPT SYSTEM - STARSHIP (LOAD LAST)
+# PROMPT SYSTEM - STARSHIP
 # ====================================================================
 
-# Initialize Starship prompt (should be last UI element)
 if [[ $HAS_STARSHIP == 1 ]]; then
   eval "$(starship init zsh)"
 else
@@ -266,6 +250,21 @@ else
   setopt PROMPT_SUBST
   PROMPT='%F{green}%n%f@%F{blue}%m%f %F{yellow}%~%f%F{red}${vcs_info_msg_0_}%f %# '
 fi
+
+# ====================================================================
+# ZSH PLUGINS - LATE STAGE (AFTER ALL ZLE WIDGETS)
+# ====================================================================
+# These plugins observe ZLE state, so they must load after all widget providers
+
+# Autosuggestions - ghost text from history
+[[ -f "${_zsh_plugins}/zsh-autosuggestions/zsh-autosuggestions.zsh" ]] && \
+  source "${_zsh_plugins}/zsh-autosuggestions/zsh-autosuggestions.zsh"
+
+# Syntax highlighting - MUST BE ABSOLUTE LAST (needs final ZLE state)
+[[ -f "${_zsh_plugins}/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh" ]] && \
+  source "${_zsh_plugins}/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh"
+
+unset _zsh_plugins
 
 # ====================================================================
 # PERFORMANCE REPORTING
