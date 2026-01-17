@@ -160,7 +160,33 @@ zstyle ':completion:*' group-name ''
 zstyle ':completion:*:descriptions' format '[%d]'
 
 # ====================================================================
-# MODERN INTEGRATIONS (LOAD AFTER COMPLETION)
+# ZSH PLUGINS (LOAD AFTER COMPINIT, ORDER MATTERS)
+# ====================================================================
+# Managed by chezmoi external: ~/.local/share/zsh/plugins/
+# Order: autosuggestions → fzf-tab → syntax-highlighting (last!)
+
+_zsh_plugins="${HOME}/.local/share/zsh/plugins"
+
+# 1. Autosuggestions - ghost text from history
+[[ -f "${_zsh_plugins}/zsh-autosuggestions/zsh-autosuggestions.zsh" ]] && \
+  source "${_zsh_plugins}/zsh-autosuggestions/zsh-autosuggestions.zsh"
+
+# 2. fzf-tab - replace completion menu with fzf (requires fzf)
+if [[ $HAS_FZF == 1 ]] && [[ -f "${_zsh_plugins}/fzf-tab/fzf-tab.plugin.zsh" ]]; then
+  source "${_zsh_plugins}/fzf-tab/fzf-tab.plugin.zsh"
+  # fzf-tab configuration
+  zstyle ':fzf-tab:complete:cd:*' fzf-preview 'eza -1 --color=always $realpath 2>/dev/null || ls -1 $realpath'
+  zstyle ':fzf-tab:*' fzf-flags --height=40% --layout=reverse --border
+fi
+
+# 3. Syntax highlighting - MUST BE LAST (needs to see final ZLE state)
+[[ -f "${_zsh_plugins}/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh" ]] && \
+  source "${_zsh_plugins}/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh"
+
+unset _zsh_plugins
+
+# ====================================================================
+# MODERN INTEGRATIONS (LOAD AFTER PLUGINS)
 # ====================================================================
 
 # Zoxide (smart cd) initialization
@@ -317,10 +343,6 @@ unfunction _has
 #     # Attach to existing session or create new one
 #     tmux attach-session -t ssh_tmux || tmux new-session -s ssh_tmux
 # fi
-# Bun Completions & Path
-[ -s "/home/crtr/.bun/_bun" ] && source "/home/crtr/.bun/_bun"
-export PATH="/home/crtr/.cache/.bun/bin:$PATH"
-
-# Modern Shell Initializations (Mise Managed)
-eval "$(starship init zsh)"
-eval "$(zoxide init zsh)"
+# Bun Completions & Path (if installed via mise)
+[[ -s "${HOME}/.bun/_bun" ]] && source "${HOME}/.bun/_bun"
+[[ -d "${HOME}/.cache/.bun/bin" ]] && export PATH="${HOME}/.cache/.bun/bin:$PATH"
