@@ -3,12 +3,14 @@
 
 [data]
     # Node identification
-    hostname = {{ .chezmoi.hostname | quote }}
+    # Use output "hostname" to avoid DNS resolution issues (e.g., git.ism.la → 127.0.0.1)
+    hostname = {{ output "hostname" | trim | quote }}
     arch = {{ .chezmoi.arch | quote }}
 
     # Architecture-specific flags
-    is_arm64 = {{ eq .chezmoi.arch "aarch64" }}
-    is_x86_64 = {{ eq .chezmoi.arch "x86_64" }}
+    # Note: chezmoi normalizes aarch64 to arm64
+    is_arm64 = {{ or (eq .chezmoi.arch "aarch64") (eq .chezmoi.arch "arm64") }}
+    is_x86_64 = {{ or (eq .chezmoi.arch "x86_64") (eq .chezmoi.arch "amd64") }}
 
 # Chezmoi behavior configuration
 [edit]

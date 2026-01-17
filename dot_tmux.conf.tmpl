@@ -105,7 +105,7 @@ set -g status-justify centre
 set -g status-left-length 50
 set -g status-right-length 100
 
-{{- if eq .chezmoi.hostname "cooperator" }}
+{{- if eq .hostname "cooperator" }}
 # ============================================================================
 # COOPERATOR (crtr) - Gateway Node
 # ============================================================================
@@ -136,7 +136,7 @@ set -g status-right '#[fg=#4682b4]│#[fg=#87ceeb] %Y-%m-%d #[fg=#ffffff]%H:%M:%
 setw -g window-status-format ' #I:#W#F '
 setw -g window-status-current-format ' #I:#W#F '
 
-{{- else if eq .chezmoi.hostname "projector" }}
+{{- else if eq .hostname "projector" }}
 # ============================================================================
 # PROJECTOR (prtr) - Primary Compute Node
 # ============================================================================
@@ -167,7 +167,7 @@ set -g status-right '#[fg=#2e8b57]│#[fg=#90ee90] %Y-%m-%d #[fg=#ffffff]%H:%M:%
 setw -g window-status-format ' #I:#W#F '
 setw -g window-status-current-format ' #I:#W#F '
 
-{{- else if eq .chezmoi.hostname "director" }}
+{{- else if eq .hostname "director" }}
 # ============================================================================
 # DIRECTOR (drtr) - ML Platform Node
 # ============================================================================
