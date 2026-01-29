@@ -1,0 +1,15 @@
+#!/bin/bash
+TARGET_DIR="$HOME/.agent/skills/skills"
+# Find SKILL.md files, exclude hidden directories if needed, format as "Folder-Name <TAB> Full-Path"
+# Follow symlinks (-L) to catch local/external content
+find -L "$TARGET_DIR" -maxdepth 4 -name "SKILL.md" | \
+while read -r path; do 
+    name=$(basename "$(dirname "$path")")
+    echo "$name	$path"
+done | \
+sort | \
+fzf --delimiter="	" --with-nth=1 \
+    --preview "bat --style=numbers --color=always --line-range :100 {2}" \
+    --preview-window=right:70%:wrap \
+    --header "Press ENTER to open in \$EDITOR, CTRL-C to quit" \
+    --bind "enter:execute(\${EDITOR:-vim} {2})"
