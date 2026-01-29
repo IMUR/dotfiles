@@ -40,6 +40,7 @@ add_to_path() {
 
 # Development tools
 [ -d "$HOME/.cargo/bin" ] && add_to_path "$HOME/.cargo/bin"
+[ -d "$HOME/.bun/bin" ] && add_to_path "$HOME/.bun/bin"
 
 # Claude local installation PATH
 if [ -d "$HOME/.claude/local" ]; then
