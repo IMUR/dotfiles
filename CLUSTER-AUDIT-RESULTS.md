@@ -3,17 +3,21 @@
 **Audit Date:** 2026-02-03
 **Auditor:** Claude Code (Opus 4.5)
 **Scope:** cooperator (crtr), director (drtr), terminator (trtr)
+**Validated:** 2026-02-03 (see Addendum A)
 
 ---
 
 ## Executive Summary
 
 **Critical Issues Found: 5**
-- PATH not set in non-interactive SSH on all nodes (missing `.zprofile`)
+- PATH not set in non-interactive SSH on crtr/trtr (missing `.zshenv`) ~~[CORRECTED: was ".zprofile"]~~
 - All 4 git repositories at different commits (massive drift)
 - mise not installed on trtr (macOS)
 - chezmoi not in PATH on crtr (PATH issue symptom)
 - drtr using SSH remote while others use HTTPS
+
+> **⚠️ AUDIT METHODOLOGY WARNING**
+> This audit was conducted via non-interactive SSH (`ssh node 'command'`). Due to the very PATH issue being diagnosed, many tool detection commands (`which`, `command -v`) returned false negatives. See **Addendum A** for validated corrections.
 
 ---
 
@@ -164,9 +168,22 @@ fzf = "latest"
 
 **ROOT CAUSE:** `.profile` is sourced in `.zshrc`, but `.zshrc` is only loaded for **interactive** shells. Non-interactive login shells (`zsh -l -c "command"`) don't load `.zshrc`, so PATH is never set.
 
-**Missing:** A `.zprofile` that sources `.profile` for login-only shells.
+**~~Missing:~~ CORRECTED:** ~~A `.zprofile` that sources `.profile` for login-only shells.~~
+
+> **✅ CORRECT FIX: `.zshenv` not `.zprofile`**
+>
+> drtr works because it has `~/.zshenv`:
+> ```bash
+> . "$HOME/.cargo/env"
+> export PATH="$HOME/.local/share/mise/shims:$PATH"
+> ```
+> `.zshenv` is sourced for ALL zsh invocations (login, non-login, interactive, non-interactive).
+> `.zprofile` only helps login shells. `.zshenv` fixes everything.
 
 ### 1.5 Tool Availability
+
+> **⚠️ FALSE NEGATIVES:** This table contains errors due to non-interactive shell PATH issues.
+> See **Addendum A** for validated tool locations.
 
 | Tool | crtr | drtr | trtr | Source |
 |------|------|------|------|--------|
@@ -178,10 +195,10 @@ fzf = "latest"
 | eza | NO (PATH issue) | ~/.cargo/bin | **NOT FOUND** | mise/cargo |
 | fd | NO (PATH issue) | ~/.local/bin | **NOT FOUND** | mise |
 | node | NO (PATH issue) | mise shims | /opt/homebrew/bin | mise/brew |
-| python | /usr/bin (system) | mise shims | **NOT FOUND** | system/mise |
+| python | /usr/bin (system) | mise shims | **NOT FOUND** ~~[FALSE: brew 3.14.2]~~ | system/mise |
 | go | /usr/bin (system) | **NOT FOUND** | **NOT FOUND** | system |
-| uv | NO (PATH issue) | mise shims | **NOT FOUND** | mise |
-| bun | NO (PATH issue) | mise shims | **NOT FOUND** | mise |
+| uv | NO (PATH issue) | mise shims | **NOT FOUND** ~~[FALSE: ~/.local/bin]~~ | mise |
+| bun | NO (PATH issue) | mise shims | **NOT FOUND** ~~[FALSE: ~/.bun/bin 1.3.6]~~ | mise |
 
 ### 1.6 Hook Conflicts (Zsh chpwd_functions)
 
@@ -311,20 +328,22 @@ c483079 feat(zsh): add autosuggestions, syntax-highlighting, and fzf-tab plugins
 
 ## Phase 4: Issue Inventory
 
-| # | Issue | Node(s) | Severity | Category |
-|---|-------|---------|----------|----------|
-| 1 | No `.zprofile` - PATH not set in non-interactive login shells | ALL | **CRITICAL** | config |
-| 2 | drtr 12 commits behind canonical source | drtr | **CRITICAL** | drift |
-| 3 | mise not installed | trtr | **HIGH** | missing |
-| 4 | All nodes at different git commits | ALL | **HIGH** | drift |
-| 5 | drtr uses SSH remote while others use HTTPS | drtr | **MEDIUM** | config |
-| 6 | drtr `is_x86_64 = false` (incorrect) | drtr | **MEDIUM** | config |
-| 7 | drtr sources .profile with `emulate sh` (different method) | drtr | **MEDIUM** | config |
-| 8 | Double mise activation (.profile + .zshrc) | crtr, trtr | **LOW** | order |
-| 9 | pnpm config not in template (local addition) | crtr | **LOW** | drift |
-| 10 | Docker completions not in template (local addition) | trtr | **LOW** | drift |
-| 11 | No shared mount access from drtr/trtr to /mnt/ops/dotfiles | drtr, trtr | **LOW** | infra |
-| 12 | Mise tool versions inconsistent (drtr has fewer tools) | drtr | **LOW** | config |
+| # | Issue | Node(s) | Severity | Category | Status |
+|---|-------|---------|----------|----------|--------|
+| 1 | No `.zshenv` - PATH not set in non-interactive shells | crtr, trtr | **CRITICAL** | config | ~~was .zprofile~~ |
+| 2 | drtr 12 commits behind canonical source | drtr | **CRITICAL** | drift | |
+| 3 | mise not installed | trtr | **HIGH** | missing | |
+| 4 | All nodes at different git commits | ALL | **HIGH** | drift | |
+| 5 | drtr uses SSH remote while others use HTTPS | drtr | **MEDIUM** | config | |
+| 6 | drtr `is_x86_64 = false` (incorrect) | drtr | **MEDIUM** | config | |
+| 7 | drtr sources .profile with `emulate sh` (different method) | drtr | **MEDIUM** | config | |
+| 8 | Double mise activation (.profile + .zshrc) | crtr, trtr | **LOW** | order | |
+| 9 | pnpm config not in template (local addition) | crtr | **LOW** | drift | |
+| 10 | Docker completions not in template (local addition) | trtr | **LOW** | drift | |
+| 11 | No shared mount access from drtr/trtr to /mnt/ops/dotfiles | drtr, trtr | **LOW** | infra | |
+| 12 | Mise tool versions inconsistent (drtr has fewer tools) | drtr | **LOW** | config | |
+| 13 | **NEW** Multiple Python installations causing version conflicts | ALL | **HIGH** | config | See Addendum A |
+| 14 | **NEW** Tool version drift across nodes | ALL | **MEDIUM** | config | See Addendum A |
 
 ---
 
@@ -332,17 +351,31 @@ c483079 feat(zsh): add autosuggestions, syntax-highlighting, and fzf-tab plugins
 
 ### 5.1 Immediate Fixes (Blocking)
 
-#### Fix 1: Create `.zprofile` template (CRITICAL)
+#### ~~Fix 1: Create `.zprofile` template (CRITICAL)~~ SUPERSEDED
 
-Create `dot_zprofile.tmpl`:
-```bash
-# ~/.zprofile - sourced for login shells (interactive OR non-interactive)
-# This ensures PATH is set even for: ssh host 'zsh -l -c "command"'
+~~Create `dot_zprofile.tmpl`:~~
 
-[[ -f ~/.profile ]] && source ~/.profile
-```
-
-Add to `.chezmoiignore` if you want to skip on certain systems.
+> **✅ CORRECTED FIX: Create `.zshenv` template**
+>
+> Create `dot_zshenv.tmpl`:
+> ```bash
+> # ~/.zshenv - sourced for ALL zsh shells (login, non-login, interactive, non-interactive)
+> # This ensures PATH is set for: ssh host 'command', ssh host 'zsh -c "command"', scripts, etc.
+>
+> # Cargo/Rust environment
+> [[ -f "$HOME/.cargo/env" ]] && . "$HOME/.cargo/env"
+>
+> # Core PATH additions (order matters - first wins)
+> export PATH="$HOME/.local/share/mise/shims:$HOME/.local/bin:$HOME/.bun/bin:$HOME/.cargo/bin:$PATH"
+>
+> # macOS Homebrew
+> [[ -f /opt/homebrew/bin/brew ]] && eval "$(/opt/homebrew/bin/brew shellenv)"
+> ```
+>
+> **Why `.zshenv` not `.zprofile`:**
+> - `.zprofile` = login shells only
+> - `.zshenv` = ALL zsh invocations
+> - drtr already has this and it works
 
 #### Fix 2: Sync all nodes to latest commit
 
@@ -456,3 +489,161 @@ The cluster dotfiles have significant drift and a fundamental architectural issu
 Secondary priorities are synchronizing all nodes to the same git commit and installing mise on trtr.
 
 **Do not apply any changes yet.** This report is for review. Once approved, implement fixes in the order specified in section 5.1.
+
+---
+
+## Addendum A: Post-Audit Validation (2026-02-03)
+
+### A.1 Methodology Issue
+
+The original audit used non-interactive SSH commands (`ssh node 'which tool'`), which failed to find tools due to the very PATH issue being diagnosed. This created **circular false negatives**.
+
+**Validation method:** Direct path inspection (`ls -la ~/.local/bin/tool`) bypassing PATH.
+
+### A.2 Why drtr Works
+
+drtr has `~/.zshenv` (not managed by chezmoi):
+```bash
+. "$HOME/.cargo/env"
+export PATH="$HOME/.local/share/mise/shims:$PATH"
+```
+
+**Non-interactive PATH comparison:**
+| Node | PATH in `ssh node 'echo $PATH'` |
+|------|--------------------------------|
+| crtr | `/usr/local/bin:/usr/bin:/bin:/usr/games` (broken) |
+| drtr | `~/.local/share/mise/shims:~/.local/bin:~/bin:~/.cargo/bin:...` (working) |
+| trtr | `/usr/bin:/bin:/usr/sbin:/sbin` (broken) |
+
+### A.3 False Negatives Corrected
+
+#### crtr - 16 tools exist but invisible to `which`
+
+| Tool | Actual Location | Audit Said |
+|------|-----------------|------------|
+| chezmoi | ~/.local/bin | NO (PATH issue) ✓ |
+| starship | ~/.local/bin + mise shims | NO (PATH issue) ✓ |
+| uv | ~/.local/bin + mise shims | NO (PATH issue) ✓ |
+| claude | ~/.local/bin | NO (PATH issue) ✓ |
+| aider | ~/.local/bin | NO (PATH issue) ✓ |
+| cursor-agent | ~/.local/bin | NO (PATH issue) ✓ |
+| skill-browser | ~/.local/bin | NO (PATH issue) ✓ |
+| bat | ~/.cargo/bin + mise shims | NO (PATH issue) ✓ |
+| eza | ~/.cargo/bin + mise shims | NO (PATH issue) ✓ |
+| zoxide | ~/.cargo/bin + mise shims | NO (PATH issue) ✓ |
+| atuin | mise shims | NO (PATH issue) ✓ |
+| bun | ~/.bun/bin + mise shims | NO (PATH issue) ✓ |
+| fd | mise shims | NO (PATH issue) ✓ |
+| node | mise shims | NO (PATH issue) ✓ |
+| gemini | mise shims | NO (PATH issue) ✓ |
+
+*Audit was technically correct ("PATH issue") but severity was understated.*
+
+#### trtr - 17 tools exist but 100% invisible to `which`
+
+| Tool | Actual Location | Audit Said |
+|------|-----------------|------------|
+| claude | ~/.local/bin + /opt/homebrew/bin | NOT FOUND ✗ |
+| cursor-agent | ~/.local/bin | NOT FOUND ✗ |
+| skill-browser | ~/.local/bin | NOT FOUND ✗ |
+| uv | ~/.local/bin | NOT FOUND ✗ |
+| uvx | ~/.local/bin | NOT FOUND ✗ |
+| bun | ~/.bun/bin (v1.3.6) | NOT FOUND ✗ |
+| bat | /opt/homebrew/bin | Correct ✓ |
+| starship | /opt/homebrew/bin | Correct ✓ |
+| fzf | /opt/homebrew/bin | Correct ✓ |
+| chezmoi | /opt/homebrew/bin | NOT FOUND ✗ |
+| mkdocs | ~/.local/bin | NOT FOUND ✗ |
+| kimi | ~/.local/bin | NOT FOUND ✗ |
+| python3.14 | ~/.local/bin + /opt/homebrew/bin | NOT FOUND ✗ |
+| idb | ~/.local/bin | NOT FOUND ✗ |
+| bytebot | ~/.local/bin | NOT FOUND ✗ |
+| clawdhub | ~/.bun/bin | NOT FOUND ✗ |
+| opencode | ~/.bun/bin | NOT FOUND ✗ |
+
+**trtr's `.zprofile` only runs `brew shellenv`** - doesn't add ~/.local/bin or ~/.bun/bin.
+
+### A.4 Tool Version Conflicts
+
+#### Python (HIGH RISK)
+
+| Node | System | Managed | Gap |
+|------|--------|---------|-----|
+| crtr | 3.13.5 (/usr/bin) | mise 3.14.2 | 0.1 |
+| drtr | 3.13.5 (/usr/bin) | mise 3.14.0 | 0.1 |
+| trtr | **3.9.6** (/usr/bin Apple CLT) | brew 3.14.2 | **4.5 majors** |
+
+**Risk:** Scripts using `python3` get different versions depending on PATH order and shell context.
+
+#### Node (MEDIUM RISK)
+
+| Node | Version | Source |
+|------|---------|--------|
+| crtr | 24.12.0 | mise |
+| drtr | 24.11.1 | mise |
+| trtr | **25.5.0** | Homebrew |
+
+**Risk:** trtr on Node 25 (major version ahead), potential breaking changes.
+
+#### Go (HIGH RISK - crtr internal conflict)
+
+| Node | System | Managed |
+|------|--------|---------|
+| crtr | 1.24.4 (/usr/bin) | mise 1.25.5 |
+| drtr | NONE | NONE |
+| trtr | NONE | NONE |
+
+**Risk:** crtr has TWO Go versions; which runs depends on PATH order.
+
+#### uv (HIGH RISK - crtr internal conflict)
+
+| Node | Location 1 | Location 2 |
+|------|------------|------------|
+| crtr | mise 0.9.21 | ~/.local/bin 0.9.7 |
+| drtr | mise 0.9.12 | - |
+| trtr | ~/.local/bin | - |
+
+**Risk:** crtr has TWO uv versions with different behaviors.
+
+#### Other Tools
+
+| Tool | crtr | drtr | trtr |
+|------|------|------|------|
+| bun | 1.3.5 | 1.3.3 | 1.3.6 |
+| starship | 1.23.0 | 1.23.0 | 1.24.1 |
+| atuin | 18.10.0 | 18.8.0 | **NONE** |
+
+### A.5 Revised Fix Priority
+
+1. **CRITICAL:** Create `dot_zshenv.tmpl` in chezmoi (fixes PATH for all contexts)
+2. **CRITICAL:** Sync all nodes to same git commit
+3. **HIGH:** Install mise on trtr OR standardize on Homebrew-only for macOS
+4. **HIGH:** Resolve duplicate tool installations on crtr (uv, go)
+5. **MEDIUM:** Standardize tool versions across nodes
+6. **MEDIUM:** Decide on Python strategy (system vs managed)
+
+### A.6 Recommended .zshenv Template
+
+```bash
+# ~/.zshenv - sourced for ALL zsh shells
+# Ensures PATH works for: interactive, non-interactive, login, non-login, scripts, SSH commands
+
+# Cargo/Rust
+[[ -f "$HOME/.cargo/env" ]] && . "$HOME/.cargo/env"
+
+# PATH construction (first entry wins on conflict)
+typeset -U PATH  # unique entries only
+PATH="$HOME/.local/share/mise/shims:$PATH"
+PATH="$HOME/.local/bin:$PATH"
+PATH="$HOME/.bun/bin:$PATH"
+PATH="$HOME/.cargo/bin:$PATH"
+PATH="$HOME/go/bin:$PATH"
+export PATH
+
+# macOS Homebrew (if present)
+[[ -x /opt/homebrew/bin/brew ]] && eval "$(/opt/homebrew/bin/brew shellenv)"
+```
+
+---
+
+*Addendum added after validation session identifying audit false negatives and methodology limitations.*
