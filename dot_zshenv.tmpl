@@ -1,17 +1,23 @@
 # ~/.zshenv - sourced for ALL zsh shells
 # Ensures PATH works for: interactive, non-interactive, login, non-login, scripts, SSH commands
 
-# Cargo/Rust
+# 1. Base Environment (System + Cargo + Brew)
+# Cargo
 [[ -f "$HOME/.cargo/env" ]] && . "$HOME/.cargo/env"
-
-# PATH construction (first entry wins on conflict)
-typeset -U PATH  # unique entries only
-PATH="$HOME/.local/share/mise/shims:$PATH"
-PATH="$HOME/.local/bin:$PATH"
-PATH="$HOME/.bun/bin:$PATH"
-PATH="$HOME/.cargo/bin:$PATH"
-PATH="$HOME/go/bin:$PATH"
-export PATH
-
-# macOS Homebrew (if present)
+# Homebrew
 [[ -x /opt/homebrew/bin/brew ]] && eval "$(/opt/homebrew/bin/brew shellenv)"
+
+# 2. Path Prioritization (Last prepend wins)
+typeset -U PATH
+
+# Low Priority (Legacy)
+PATH="$HOME/go/bin:$PATH"
+PATH="$HOME/.bun/bin:$PATH"
+
+# High Priority (Local)
+PATH="$HOME/.local/bin:$PATH"
+
+# Highest Priority (Mise Managed)
+PATH="$HOME/.local/share/mise/shims:$PATH"
+
+export PATH
