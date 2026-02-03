@@ -12,7 +12,7 @@ Generated: 2026-02-03 from crtr (cooperator) node session
 | drtr | director | 192.168.254.124 | 100.64.0.2 | Debian 13 (Trixie), x86_64 | Inference, machine learning |
 | trtr | terminator | 192.168.254.184 | 100.64.0.8 | macOS Tahoe 26.2, arm64 | Workstation |
 
-**All nodes have `fastfetch` installed** - run it for quick system profile.
+**All nodes have `fastfetch` installed** (trtr via Homebrew).
 
 **Shared Storage:** `/mnt/ops/` is a Samba mount accessible from all nodes.
 
@@ -47,11 +47,43 @@ All nodes are on the Tailscale mesh network (`100.64.0.0/10`):
 # Run on any node for system info
 fastfetch
 
-# Check connectivity to other nodes
-ssh crtr 'hostname && fastfetch --logo none'
-ssh drtr 'hostname && fastfetch --logo none'
-ssh trtr 'hostname && fastfetch --logo none'
+# Check connectivity to other nodes (use login shell!)
+ssh crtr 'zsh -l -c "fastfetch --logo none"'
+ssh drtr 'zsh -l -c "fastfetch --logo none"'
+ssh trtr 'zsh -l -c "hostname"'  # no fastfetch on macOS
 ```
+
+### Chezmoi Installation
+
+| Node | Path | Version |
+|------|------|---------|
+| crtr | `~/.local/bin/chezmoi` | v2.66.0 |
+| drtr | `~/.local/bin/chezmoi` | v2.65.1 |
+| trtr | `/opt/homebrew/bin/chezmoi` | v2.69.3 (Homebrew) |
+
+---
+
+## CRITICAL: Non-Interactive SSH PATH Issue
+
+**Problem:** Running `ssh host 'command'` spawns a non-login, non-interactive shell that does NOT source `.profile`. This means:
+- `~/.local/bin` is not in PATH
+- mise-managed tools are not available
+- Commands like `chezmoi`, `mise`, `starship` fail with "command not found"
+
+**Symptom:**
+```bash
+$ ssh crtr 'chezmoi doctor'
+zsh:1: command not found: chezmoi
+```
+
+**Fix - use login shell wrapper:**
+```bash
+ssh crtr 'zsh -l -c "chezmoi doctor"'
+```
+
+**Root cause:** PATH setup is only in `.profile` (login shells). For non-interactive SSH to work, PATH setup should also be in `.zshenv` (always sourced).
+
+**This is an audit finding** - the shell config needs `.zshenv` to handle non-interactive sessions properly.
 
 ---
 
