@@ -1,0 +1,10 @@
+#!/bin/bash
+
+# .config/mise/config.toml hash: {{ include "dot_config/mise/config.toml" | sha256sum }}
+
+if command -v mise >/dev/null 2>&1; then
+    echo "Mise config changed. Running 'mise install'..."
+    mise install
+else
+    echo "Warning: mise not found in PATH. Skipping auto-install."
+fi

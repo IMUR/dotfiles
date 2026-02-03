@@ -12,3 +12,12 @@ bat = "latest"
 eza = "latest"
 zoxide = "latest"
 fzf = "latest"
+
+# Expanded Cluster Tools
+delta = "latest"
+dust = "latest"
+jq = "latest"
+yq = "latest"
+tldr = "latest"
+usage = "latest"
+bottom = "latest"
