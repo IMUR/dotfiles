@@ -18,6 +18,6 @@ delta = "latest"
 dust = "latest"
 jq = "latest"
 yq = "latest"
-tldr = "latest"
 usage = "latest"
 bottom = "latest"
+# tldr = "latest" # Removed due to registry error, requires specific plugin/name
