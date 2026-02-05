@@ -1,0 +1,21 @@
+#!/bin/bash
+# Bun global packages - hash triggers reinstall on version changes
+# {{ include "dot_config/bun/globals.txt" | sha256sum }}
+
+set -euo pipefail
+
+if command -v bun &>/dev/null; then
+    echo "Installing bun global packages..."
+
+    # Read packages from globals.txt (skip comments and empty lines)
+    while IFS= read -r pkg || [[ -n "$pkg" ]]; do
+        # Skip comments and empty lines
+        [[ -z "$pkg" || "$pkg" =~ ^# ]] && continue
+        echo "  Installing: $pkg"
+        bun add -g "$pkg"
+    done < "{{ .chezmoi.sourceDir }}/dot_config/bun/globals.txt"
+
+    echo "Bun global packages installed."
+else
+    echo "Bun not found, skipping global package installation."
+fi

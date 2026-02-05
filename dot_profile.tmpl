@@ -105,6 +105,7 @@ export HAS_NPM=$(_has_cmd npm && echo 1 || echo 0)
 export HAS_ANSIBLE=$(_has_cmd ansible && echo 1 || echo 0)
 export HAS_UV=$(_has_cmd uv && echo 1 || echo 0)
 export HAS_MISE=$(_has_cmd mise && echo 1 || echo 0)
+export HAS_LIGHTPANDA=$(_has_cmd lightpanda && echo 1 || echo 0)
 
 # Note: UV and other mise-managed tools should now be detected correctly
 # since mise was activated before tool detection
@@ -120,6 +121,9 @@ export VISUAL="${VISUAL:-$EDITOR}"
 # Less configuration
 export LESS="-R"
 export LESSHISTFILE="-"
+
+# Lightpanda: disable telemetry
+export LIGHTPANDA_DISABLE_TELEMETRY=true
 
 # XDG Base Directory Specification
 export XDG_CONFIG_HOME="${XDG_CONFIG_HOME:-$HOME/.config}"
