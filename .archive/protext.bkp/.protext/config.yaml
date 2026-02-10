@@ -1,0 +1,6 @@
+# Protext Configuration
+# Generated: 2026-02-10
+
+extraction_mode: suggest  # suggest | auto | confirm
+token_budget: 2000        # Max extraction tokens per session
+active_scope: ops         # Default scope to load

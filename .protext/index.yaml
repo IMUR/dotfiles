@@ -1,0 +1,39 @@
+# Protext Extraction Index
+# Max 20 extractions. Triggers are keyword hints (suggest-mode default).
+
+extractions:
+  architecture:
+    source: .context/ARCHITECTURE.md
+    triggers: [architecture, design, state, chezmoi, structure]
+    summary: "Configuration architecture and state management"
+    tokens: ~500
+
+  cluster-topology:
+    source: .context/CLUSTER-TOPOLOGY.md
+    triggers: [cluster, topology, node, cooperator, director, terminator, inventory]
+    summary: "Node inventory, roles, and cluster layout"
+    tokens: ~500
+
+  file-registry:
+    source: .context/RECORD-FILE-REGISTRY.md
+    triggers: [files, templates, registry, managed, inventory]
+    summary: "Inventory of managed chezmoi templates"
+    tokens: ~400
+
+  promotion-workflow:
+    source: .context/RECORD-PROMOTION-WORKFLOW.md
+    triggers: [promote, workflow, propagate, deploy, apply]
+    summary: "How to propagate config changes across nodes"
+    tokens: ~400
+
+  maintenance:
+    source: docs/MAINTENANCE.md
+    triggers: [maintenance, checklist, audit, alignment, contract]
+    summary: "Node repo alignment checklist and audit schedule"
+    tokens: ~400
+
+  cluster-status:
+    source: .context/CLUSTER-DOTFILES-STATUS.md
+    triggers: [status, dotfiles, cluster, health]
+    summary: "Current cluster dotfiles deployment status"
+    tokens: ~500

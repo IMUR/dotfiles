@@ -1,0 +1,31 @@
+# Protext Extraction Index
+# Deep context signposts for on-demand loading
+
+extractions:
+  architecture:
+    source: CLAUDE.md
+    section: "## Architecture"
+    triggers: [template, naming, layer, detection, variable]
+    summary: "File naming conventions, shell config layers, plugin loading order, template variables"
+    tokens: ~650
+
+  validation:
+    source: CLAUDE.md
+    section: "## Validation Workflow"
+    triggers: [test, validate, apply, diff, workflow]
+    summary: "Pre-apply validation steps, testing workflow, safe operational practices"
+    tokens: ~200
+
+  nodes:
+    source: CLAUDE.md
+    section: "## Chezmoi Installation Per Node"
+    triggers: [node, cluster, installation, path, version]
+    summary: "Node-specific chezmoi paths and versions, SSH execution patterns"
+    tokens: ~300
+
+  templates:
+    source: CLAUDE.md
+    section: "## Key Files"
+    triggers: [template, key files, config, toml, profile, zshrc]
+    summary: "Critical template files, their purposes, and relationships"
+    tokens: ~400
