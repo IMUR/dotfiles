@@ -1,4 +1,5 @@
 [tools]
+chezmoi = "2.69.4"
 atuin = "18.12.1"
 bat = "0.26.1"
 bottom = "0.12.3"
