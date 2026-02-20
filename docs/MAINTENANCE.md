@@ -1,22 +1,22 @@
 # Node Repo Alignment Checklist
 
-This checklist defines the canonical structure for all node-specific configuration repositories (`crtr-config`, `drtr-config`, `trtr-config`).
+This checklist defines the canonical structure for all node-specific configuration repositories (`crtr-config`, `drtr-config`, `trtr-config`, `prtr-config`).
 
 ## Structural Contract
 
 - [ ] **Root Files:**
-    - [ ] `README.md` (Overview, typically < 50 lines)
-    - [ ] `CLAUDE.md` (AI Context, pointing to `docs/` as truth)
-    - [ ] `.gitignore` (Standard exclusions)
-    - [ ] `.infisical.json` (Optional, if secrets usage exists)
+  - [ ] `README.md` (Overview, typically < 50 lines)
+  - [ ] `CLAUDE.md` (AI Context, pointing to `docs/` as truth)
+  - [ ] `.gitignore` (Standard exclusions)
+  - [ ] `.infisical.json` (Optional, if secrets usage exists)
 - [ ] **Directories:**
-    - [ ] `docs/` (Canonical Node Truth)
-    - [ ] `config/` (Optional, local config files)
-    - [ ] `scripts/` (Optional, local utilities)
+  - [ ] `docs/` (Canonical Node Truth)
+  - [ ] `config/` (Optional, local config files)
+  - [ ] `scripts/` (Optional, local utilities)
 - [ ] **Forbidden:**
-    - [ ] No `.meta/` (Legacy governance)
-    - [ ] No `.stems/` (Legacy governance)
-    - [ ] No `NODE-PROFILES.md` (except in canonical `crtr-config` or `colab-config`)
+  - [ ] No `.meta/` (Legacy governance)
+  - [ ] No `.stems/` (Legacy governance)
+  - [ ] No `NODE-PROFILES.md` (except in canonical `crtr-config` or `colab-config`)
 
 ## Content Contract (docs/)
 
