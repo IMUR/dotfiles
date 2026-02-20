@@ -1,14 +1,10 @@
-.context
-CLAUDE.md
-GEMINI.md
-README.md
-AGENTS.md
+# Development Caches & AI
+.claude/
+
+# Secrets
 .infisical.json
 .env
-.env.local
-.env.development.local
-.env.test.local
-.env.production.local
-.env.development
-.env.test
-.env.production
+.env.*
+
+# Extraneous
+dotfiles-example.txt

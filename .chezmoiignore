@@ -1,0 +1,10 @@
+# Repository Metadata (Do not deploy to endpoints)
+*.md
+docs/
+.context/
+.protext/
+.github/
+.vscode/
+
+# Ignore extraneous
+dotfiles-example.txt
