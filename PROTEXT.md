@@ -1,6 +1,6 @@
 # Protext: Dotfiles
->
-> Generated: 2026-02-10 | Scope: ops | Tokens: ~450
+
+> Generated: 2026-02-20 | Scope: ops | Tokens: ~400
 
 ## Identity
 <!-- marker:identity -->
@@ -9,12 +9,12 @@ Chezmoi-managed dotfiles for a 4-node cluster (cooperator, director, terminator,
 
 ## Current State
 <!-- marker:state -->
-Active: Tool additions (Lightpanda, puppeteer-core) | Blocked: None | Recent: PATH precedence fix in zshenv
+Active: Tool version bumps (bun, go, fzf, etc.) | Blocked: None | Recent: Out-of-band edit workflow explicitly documented across GEMINI, CLAUDE, and MAINTENANCE files
 <!-- /marker:state -->
 
 ## Hot Context
 <!-- marker:hot -->
-- Shell layers: .profile (foundation) → .bashrc/.zshrc (shell-specific) → .zshrc.local (overrides)
+- Shell layers: `.profile` (foundation) → `.bashrc/.zshrc` (shell-specific) → `.zshrc.local` (overrides)
 - Zsh plugin order matters: compinit → fzf-tab → fzf → atuin → zoxide/mise/starship → autosuggestions → syntax-highlighting (LAST)
 - SSH remote commands need login shell: `ssh node 'zsh -l -c "cmd"'`
 - Template vars: `.hostname`, `.arch`, `.is_arm64`, `.is_x86_64`, `.cluster.domain` (ism.la)
@@ -26,8 +26,6 @@ Active: Tool additions (Lightpanda, puppeteer-core) | Blocked: None | Recent: PA
 - `@ops` → .protext/scopes/ops.md
 - `@dev` → .protext/scopes/dev.md
 - `@security` → .protext/scopes/security.md
-- `@deep:architecture` → .context/ARCHITECTURE.md
-- `@deep:maintenance` → docs/MAINTENANCE.md
 
 ## Links
 <!-- marker:links -->
@@ -40,5 +38,5 @@ Active: Tool additions (Lightpanda, puppeteer-core) | Blocked: None | Recent: PA
 
 ## Handoff
 <!-- marker:handoff -->
-Last: Protext initialized | Next: Customize scopes for cluster ops | Caution: Review auto-generated content
+Last: Out-of-band workflow & 4-node architecture extensively audited globally | Next: Validate `zoxide` plugin drift across nodes | Caution: macOS expects /Volumes/ops mounts
 <!-- /marker:handoff -->
