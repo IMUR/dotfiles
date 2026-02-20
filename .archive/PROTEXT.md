@@ -4,7 +4,7 @@
 
 ## Identity
 
-Chezmoi-managed dotfiles for a multi-node cluster (cooperator, director, terminator). Uses Go templates for cross-architecture deployment (ARM64/x86_64) with automatic tool detection.
+Chezmoi-managed dotfiles for a multi-node cluster (cooperator, director, terminator, projector). Uses Go templates for cross-architecture deployment (ARM64/x86_64) with automatic tool detection. All nodes use an out-of-band edit workflow: edits happen in the `/mnt/ops/dotfiles/` local clone, get pushed to GitHub, and are pulled down via `chezmoi update` on the targets.
 
 ## Current State
 
@@ -14,7 +14,7 @@ Active: Maintenance | Blocked: None | Recent: Lightpanda browser + puppeteer-cor
 
 - **Shell layers**: `.profile` → `.zshrc` (Layer 0 sets PATH + HAS_* flags)
 - **SSH caveat**: Use `ssh host 'zsh -l -c "cmd"'` for tools in PATH
-- **Nodes**: crtr (ARM64), drtr (ARM64), trtr (x86_64/Homebrew)
+- **Nodes**: crtr (linux/arm64), drtr (linux/amd64), trtr (darwin/arm64), prtr (linux/amd64)
 
 ## Scope Signals
 
