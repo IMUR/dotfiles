@@ -213,13 +213,6 @@ if [[ $HAS_ATUIN == 1 ]]; then
   eval "$(atuin init zsh)"
 fi
 
-# Zoxide (smart cd)
-if [[ $HAS_ZOXIDE == 1 ]]; then
-  if eval "$(zoxide init zsh 2>/dev/null)"; then
-    alias cd='z'
-    alias cdi='zi'  # Interactive mode
-  fi
-fi
 
 # Claude local installation PATH
 if [ -d "$HOME/.claude/local" ]; then
@@ -345,3 +338,16 @@ unfunction _has
 # Bun Completions & Path (if installed via mise)
 [[ -s "${HOME}/.bun/_bun" ]] && source "${HOME}/.bun/_bun"
 [[ -d "${HOME}/.cache/.bun/bin" ]] && export PATH="${HOME}/.cache/.bun/bin:$PATH"
+
+# ====================================================================
+# ZOXIDE (MUST LOAD LAST)
+# ====================================================================
+# Zoxide must initialize after all plugins (like syntax highlighting)
+# and local configuration files to ensure its `chpwd_functions` hook 
+# isn't accidentally cleared or overridden by subsequent scripts.
+if [[ $HAS_ZOXIDE == 1 ]]; then
+  if eval "$(zoxide init zsh 2>/dev/null)"; then
+    alias cd='z'
+    alias cdi='zi'  # Interactive mode
+  fi
+fi
