@@ -1,10 +1,31 @@
-# Repository Metadata (Do not deploy to endpoints)
-*.md
-docs/
-.context/
-.protext/
-.github/
-.vscode/
+# Development Caches & IDE Metadata
+.claude
+.vscode
+.idea
+.cursorignore
+.agent-context.json
 
-# Ignore extraneous
+# Secrets
+.infisical.json
+.env
+.env.*
+
+# Project Context & Documentation (Do NOT deploy to cluster homes)
+.archive
+.context
+.protext
+docs
+AGENTS.md
+CLAUDE.md
+GEMINI.md
+PROTEXT.md
+README.md
+
+# Global chezmoi exclude rules
+.gitignore
+.chezmoiignore
+.git
+.github
+
+# Extraneous
 dotfiles-example.txt

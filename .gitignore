@@ -1,10 +1,25 @@
-# Development Caches & AI
+# Development Caches & IDE Metadata
 .claude/
+.vscode/
+.idea/
+.cursorignore
+.agent-context.json
 
 # Secrets
 .infisical.json
 .env
 .env.*
+
+# Project Context & Documentation (Keep these local, not public)
+.archive/
+.context/
+.protext/
+docs/
+AGENTS.md
+CLAUDE.md
+GEMINI.md
+PROTEXT.md
+README.md
 
 # Extraneous
 dotfiles-example.txt
