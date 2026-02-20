@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Overview
 
-Chezmoi-managed dotfiles for a multi-node cluster (cooperator, director, terminator, projector). Uses Go templates for cross-architecture deployment (ARM64/x86_64) with automatic tool detection. All nodes use an out-of-band edit workflow: edits happen in the `/mnt/ops/dotfiles/` local clone, get pushed to GitHub, and are pulled down via `chezmoi update` on the targets.
+Chezmoi-managed dotfiles for a multi-node cluster (cooperator, director, terminator, projector). Uses Go templates for cross-architecture deployment (ARM64/x86_64) with automatic tool detection. All nodes use an out-of-band edit workflow: edits happen in the local clone (`/mnt/ops/dotfiles/` on Linux nodes, `/Volumes/ops/dotfiles/` on macOS `trtr`), get pushed to GitHub, and are pulled down via `chezmoi update` on the targets.
 
 ## Commands
 
