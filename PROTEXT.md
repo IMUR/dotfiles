@@ -31,10 +31,11 @@ Active: Tool additions (Lightpanda, puppeteer-core) | Blocked: None | Recent: PA
 
 ## Links
 <!-- marker:links -->
-- `/mnt/ops/configs/crtr-config` → peer | cooperator node config (gateway, 192.168.254.10)
-- `/mnt/ops/configs/drtr-config` → peer | director node config (AI/Ollama)
-- `/Volumes/ops/configs/trtr-config` → peer | terminator node config (macOS desktop)
-- `/mnt/ops/configs/prtr-config` → peer | projector node config (headless compute)
+- `../configs` → parent | Configs parent directory
+- `../configs/crtr-config` → peer | cooperator node config (gateway, 192.168.254.10)
+- `../configs/drtr-config` → peer | director node config (AI/Ollama)
+- `../configs/trtr-config` → peer | terminator node config (macOS desktop)
+- `../configs/prtr-config` → peer | projector node config (headless compute)
 <!-- /marker:links -->
 
 ## Handoff
