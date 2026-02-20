@@ -1,3 +1,4 @@
 # Bun global packages
 # Managed by chezmoi - changes trigger reinstall
 puppeteer-core
+@withgraphite/graphite-cli@1.7.19
