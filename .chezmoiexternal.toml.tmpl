@@ -35,6 +35,43 @@ refreshPeriod = "168h"
 # Headless browser for web automation (puppeteer/playwright compatible)
 # https://lightpanda.io
 
+# =============================================================================
+# PROTON PASS CLI
+# =============================================================================
+# Secrets manager CLI with chezmoi template integration
+# https://protonpass.github.io/pass-cli/
+# Version pin: update URL + hash when bumping (fetch from https://proton.me/download/pass-cli/versions.json)
+
+{{- if eq .chezmoi.os "linux" }}
+{{-   if eq .chezmoi.arch "amd64" }}
+[".local/bin/pass-cli"]
+type = "file"
+url = "https://proton.me/download/pass-cli/1.5.2/pass-cli-linux-x86_64"
+executable = true
+refreshPeriod = "168h"
+{{-   else if eq .chezmoi.arch "arm64" }}
+[".local/bin/pass-cli"]
+type = "file"
+url = "https://proton.me/download/pass-cli/1.5.2/pass-cli-linux-aarch64"
+executable = true
+refreshPeriod = "168h"
+{{-   end }}
+{{- else if eq .chezmoi.os "darwin" }}
+{{-   if eq .chezmoi.arch "arm64" }}
+[".local/bin/pass-cli"]
+type = "file"
+url = "https://proton.me/download/pass-cli/1.5.2/pass-cli-macos-aarch64"
+executable = true
+refreshPeriod = "168h"
+{{-   else }}
+[".local/bin/pass-cli"]
+type = "file"
+url = "https://proton.me/download/pass-cli/1.5.2/pass-cli-macos-x86_64"
+executable = true
+refreshPeriod = "168h"
+{{-   end }}
+{{- end }}
+
 {{- if eq .chezmoi.os "linux" }}
 {{-   if eq .chezmoi.arch "amd64" }}
 [".local/bin/lightpanda"]
