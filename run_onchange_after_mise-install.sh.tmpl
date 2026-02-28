@@ -4,7 +4,21 @@
 
 if command -v mise >/dev/null 2>&1; then
     echo "Mise config changed. Running 'mise install'..."
-    mise install
+    mise install --yes 2>&1 &
+    MISE_PID=$!
+    # Timeout after 120s to avoid hanging on problematic nodes (e.g. macOS Sequoia ARM)
+    TIMEOUT=120
+    while [ $TIMEOUT -gt 0 ] && kill -0 $MISE_PID 2>/dev/null; do
+        sleep 5
+        TIMEOUT=$((TIMEOUT - 5))
+    done
+    if kill -0 $MISE_PID 2>/dev/null; then
+        echo "Warning: mise install timed out, killing."
+        kill $MISE_PID 2>/dev/null
+    else
+        wait $MISE_PID
+        echo "mise install completed."
+    fi
 else
     echo "Warning: mise not found in PATH. Skipping auto-install."
 fi
